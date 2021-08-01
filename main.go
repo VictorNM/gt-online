@@ -15,26 +15,28 @@ func main() {
 		addr       = "mysql:3306"
 		name       = "gt-online"
 	)
-	
+
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s", user, pass, addr, name))
 	if err != nil {
 		log.Fatalf("open db: %v", err)
 	}
 
-	if err := try(5, time.Second, db.Ping); err != nil {
+	if err := try(20, db.Ping); err != nil {
 		log.Fatalf("ping db: %v", err)
 	}
 
 	fmt.Println("Success")
 }
 
-func try(times int, interval time.Duration, f func() error) error {
+func try(times int, f func() error) error {
 	var err error
 	for i := 0; i < times; i++ {
 		err = f()
 		if err == nil {
 			return nil
 		}
+		interval := time.Duration(i+1) * time.Second
+		log.Printf("failed: attempt %d, sleep for %v", i+1, interval)
 		time.Sleep(interval)
 	}
 

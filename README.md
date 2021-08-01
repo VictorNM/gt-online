@@ -1,17 +1,13 @@
 # GT ONLINE
 
-## Getting Started
-
-To get a local copy up and running follow these simple steps.
-
-### Prerequisites
+## Prerequisites
 
 You will need to have the following installed:
 
 - Docker
 - Make
 
-### Installation
+## Usage
 
 1. Clone the repo
    ```sh
@@ -21,7 +17,18 @@ You will need to have the following installed:
    ```sh
    make up
    ```
-3. Check if the app run successfully
+   
+3. In update code, you need to rebuild the app
+    ```sh
+   make build
+   ```
+
+4. Check if the app run successfully
     ```sh
    make log ## Should see "Success"
+   ```
+   
+5. For more information
+   ```sh
+   make
    ```
