@@ -25,7 +25,7 @@ You will need to have the following installed:
 
 4. Check if the app run successfully
     ```sh
-   make log ## Should see "Success"
+   make log ## Should see "Server start at..."
    ```
    
 5. For more information

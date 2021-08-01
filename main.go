@@ -4,12 +4,26 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
+	s := &Server{}
+	s.init()
+	s.start()
+}
+
+type Server struct {
+	db *sql.DB
+	e  *gin.Engine
+}
+
+func (s *Server) init() {
 	var (
 		user, pass = "root", "root"
 		addr       = "mysql:3306"
@@ -25,7 +39,20 @@ func main() {
 		log.Fatalf("ping db: %v", err)
 	}
 
-	fmt.Println("Success")
+	s.db = db
+
+	s.e = gin.Default()
+	s.e.Use(cors.Default())
+	s.e.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, `{"ping": "pong"}`)
+	})
+}
+
+func (s *Server) start() {
+	log.Println("Server start at port 8080")
+	if err := s.e.Run(":8080"); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Run server failed: %v", err)
+	}
 }
 
 func try(times int, f func() error) error {
