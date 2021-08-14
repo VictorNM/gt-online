@@ -1,14 +1,5 @@
 version: '3.7'
 services:
-  backend:
-    container_name: backend
-    build:
-      context: .
-    ports:
-      - '8080:8080'
-    depends_on:
-      - mysql
-
   mysql:
     container_name: mysql
     image: mysql:8.0
@@ -19,4 +10,4 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./devstack/deployment/intidb:/docker-entrypoint-initdb.d
+      - ./deployment/intidb:/docker-entrypoint-initdb.d

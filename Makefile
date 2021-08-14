@@ -13,5 +13,21 @@ up: ## Run all services locally using Docker
 down: ## Clear all local services using Docker
 	docker compose down
 
+run: ## Run the app locally
+	go run main.go
+
 log: ## Log backend
 	docker compose logs -f backend
+
+dev-up: ## Start local environment for development
+	cd devstack && docker compose up -d
+
+dev-down: ## Shutdown the local environment
+	cd devstack && docker compose down
+
+.PHONY: test
+test:
+	go test ./test
+
+test-docker:
+	go test ./test -env=docker
