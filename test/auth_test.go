@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/bxcodec/faker/v3"
@@ -29,19 +30,74 @@ func TestRegister_Validation(t *testing.T) {
 		return req
 	}
 
+	t.Run("validate request format", func(t *testing.T) {
+		tests := map[string]struct {
+			alterReq func(req *RegisterRequest)
+		}{
+			"invalid email": {
+				alterReq: func(req *RegisterRequest) {
+					req.Email = "invalid"
+				},
+			},
+
+			"password != confirmation password": {
+				alterReq: func(req *RegisterRequest) {
+					req.Password = "a-password-123"
+					req.PasswordConfirmation = "another-password-456"
+				},
+			},
+		}
+
+		for name, test := range tests {
+			t.Run(name, func(t *testing.T) {
+				api := makeAPI()
+				req := validReq()
+				test.alterReq(&req)
+
+				_, err := api.Register(t, req)
+				e := mustAPIErr(t, err)
+				assert.Equal(t, http.StatusBadRequest, e.HTTPStatus)
+				assert.Equal(t, gterr.InvalidArgument, e.Code)
+			})
+		}
+	})
+
+	t.Run("duplicate email can't register", func(t *testing.T) {
+		api := makeAPI()
+		req := validReq()
+
+		res, err := api.Register(t, req)
+		require.NoError(t, err)
+		assert.Equal(t, req.Email, res.Email)
+
+		_, err = api.Register(t, req)
+		e := mustAPIErr(t, err)
+		assert.Equal(t, http.StatusConflict, e.HTTPStatus)
+		assert.Equal(t, gterr.AlreadyExists, e.Code)
+	})
+}
+
+func TestLogin_Validation(t *testing.T) {
+	validReq := func() LoginRequest {
+		req := LoginRequest{
+			Email:    faker.Email(),
+			Password: "Abc@123_xyZ",
+		}
+		return req
+	}
+
 	tests := map[string]struct {
-		alterReq func(req *RegisterRequest)
+		alterReq func(req *LoginRequest)
 	}{
 		"invalid email": {
-			alterReq: func(req *RegisterRequest) {
+			alterReq: func(req *LoginRequest) {
 				req.Email = "invalid"
 			},
 		},
 
-		"password != confirmation password": {
-			alterReq: func(req *RegisterRequest) {
-				req.Password = "a-password-123"
-				req.PasswordConfirmation = "another-password-456"
+		"empty password": {
+			alterReq: func(req *LoginRequest) {
+				req.Password = ""
 			},
 		},
 	}
@@ -52,7 +108,7 @@ func TestRegister_Validation(t *testing.T) {
 			req := validReq()
 			test.alterReq(&req)
 
-			_, err := api.Register(t, req)
+			_, err := api.Login(t, req)
 			e := mustAPIErr(t, err)
 			assert.Equal(t, http.StatusBadRequest, e.HTTPStatus)
 			assert.Equal(t, gterr.InvalidArgument, e.Code)
@@ -60,8 +116,7 @@ func TestRegister_Validation(t *testing.T) {
 	}
 }
 
-func TestRegisterSuccess(t *testing.T) {
-	// TODO: test full flow with login
+func TestRegisterLogin(t *testing.T) {
 	api := makeAPI()
 	req := RegisterRequest{
 		Email:                faker.Email(),
@@ -73,6 +128,14 @@ func TestRegisterSuccess(t *testing.T) {
 	res, err := api.Register(t, req)
 	require.NoError(t, err)
 	assert.Equal(t, req.Email, res.Email)
+
+	res2, err := api.Login(t, LoginRequest{
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	require.NoError(t, err)
+	assert.NotEmpty(t, res2.AccessToken, "access_token should not empty")
+	assert.True(t, strings.EqualFold("bearer", res2.TokenType), "token_type should be 'bearer'")
 }
 
 func makeAPI() *API {
@@ -109,11 +172,8 @@ func TestMain(m *testing.M) {
 func testMain(m *testing.M) int {
 	var addr = "http://localhost:8080"
 	if env == "local" {
-		cfg := server.Config{}
+		cfg := server.DefaultConfig()
 		cfg.DB.Addr = "localhost:3306"
-		cfg.DB.User = "root"
-		cfg.DB.Pass = "root"
-		cfg.DB.Name = "gt-online"
 		s := server.New(cfg)
 		srv := httptest.NewServer(s)
 		defer srv.Close()

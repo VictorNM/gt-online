@@ -4,20 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/victornm/gtonline/internal/gterr"
 )
 
 var (
-	ErrNotFound      = errors.New("not found")
-	ErrAlreadyExists = errors.New("already exists")
+	ErrNotFound = errors.New("not found")
 )
 
 type (
 	Service struct {
 		storage Storage
+		secret  []byte
 	}
 
 	Storage interface {
@@ -31,9 +33,18 @@ type (
 		FirstName      string `db:"first_name"`
 		LastName       string `db:"last_name"`
 	}
+)
 
+func NewService(storage Storage, secret []byte) *Service {
+	return &Service{
+		storage: storage,
+		secret:  secret,
+	}
+}
+
+type (
 	RegisterRequest struct {
-		Email                string `json:"email" binding:"email"`
+		Email                string `json:"email" binding:"email,required"`
 		Password             string `json:"password" binding:"required"`
 		PasswordConfirmation string `json:"password_confirmation" binding:"eqfield=Password"`
 		FirstName            string `json:"first_name" binding:"required"`
@@ -45,12 +56,6 @@ type (
 	}
 )
 
-func NewService(storage Storage) *Service {
-	return &Service{
-		storage: storage,
-	}
-}
-
 func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterResponse, error) {
 	_, err := s.storage.FindUserByEmail(ctx, req.Email)
 	if err == nil {
@@ -61,14 +66,14 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterR
 		return nil, gterr.New(gterr.Internal, "", err)
 	}
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	hashed, err := hash(req.Password)
 	if err != nil {
 		return nil, gterr.New(gterr.Internal, "", err)
 	}
 
 	err = s.storage.CreateUser(ctx, User{
 		Email:          req.Email,
-		HashedPassword: string(hashed),
+		HashedPassword: hashed,
 		FirstName:      req.FirstName,
 		LastName:       req.LastName,
 	})
@@ -80,4 +85,90 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterR
 	return &RegisterResponse{
 		Email: req.Email,
 	}, nil
+}
+
+type (
+	LoginRequest struct {
+		Email    string `json:"email" binding:"email,required"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	// LoginResponse follow the convention described here: https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
+	LoginResponse struct {
+		AccessToken string `json:"access_token"`
+		TokenType   string `json:"token_type"`
+	}
+)
+
+func (s *Service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, error) {
+	u, err := s.storage.FindUserByEmail(ctx, req.Email)
+	if errors.Is(err, ErrNotFound) {
+		return nil, gterr.New(gterr.Unauthenticated, "Email or password do not matched.", err)
+	}
+
+	match, err := compareHash(u.HashedPassword, req.Password)
+	if err != nil {
+		return nil, gterr.New(gterr.Internal, "", err)
+	}
+
+	if !match {
+		return nil, gterr.New(gterr.Unauthenticated, "Email or password do not matched.", err)
+	}
+
+	token, err := genToken(*u, s.secret)
+	if err != nil {
+		return nil, gterr.New(gterr.Internal, "", err)
+	}
+
+	return &LoginResponse{
+		AccessToken: token,
+		TokenType:   "bearer",
+	}, nil
+}
+
+func hash(pass string) (string, error) {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(hashed), nil
+}
+
+func compareHash(hashed, pass string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(pass))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func genToken(u User, secret []byte) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwtClaims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
+			IssuedAt:  time.Now().Unix(),
+			Issuer:    "gt-online/auth",
+		},
+		UserAuthDTO: &UserAuthDTO{Email: u.Email},
+	})
+
+	tokenString, err := token.SignedString(secret)
+	if err != nil {
+		return "", fmt.Errorf("sign token: %v", err)
+	}
+
+	return tokenString, nil
+}
+
+type jwtClaims struct {
+	jwt.StandardClaims
+	*UserAuthDTO
+}
+
+type UserAuthDTO struct {
+	Email string `json:"email"`
 }

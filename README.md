@@ -84,3 +84,32 @@ All APIs will follow the below rules:
      "email": "tony@stark.com"
    }
    ```
+
+### Login
+
+#### Request
+
+- Method: POST
+- Path: /auth/login
+- Body:
+   ```
+   email:                  string, required
+   password:               string, required
+   ```
+  Example:
+   ```json
+   {
+     "email": "tony@stark.com",
+     "password": "abc@123@XYZ"
+   }
+   ```
+
+#### Response
+
+- 200: Success
+   ```json
+   {
+     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9ueUBzdGFyay5jb20ifQ.QfCpJBCrw4RzWM3OyDwiuTrZLAMefrSBF-YuVvodZoY",
+     "token_type": "Bearer"
+   }
+   ```

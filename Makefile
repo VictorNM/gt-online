@@ -26,8 +26,8 @@ dev-down: ## Shutdown the local environment
 	cd devstack && docker compose down
 
 .PHONY: test
-test:
-	go test ./test
+test: ## Test when develop
+	go test ./test -v
 
-test-docker:
+test-docker: ## Test with docker
 	go test ./test -env=docker

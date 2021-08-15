@@ -27,6 +27,14 @@ type (
 	}
 
 	Config struct {
+		App struct {
+			Addr string
+		}
+
+		Auth struct {
+			Secret []byte
+		}
+
 		DB struct {
 			Addr string
 			User string
@@ -40,6 +48,20 @@ func New(cfg Config) *Server {
 	return &Server{
 		cfg: cfg,
 	}
+}
+
+func DefaultConfig() Config {
+	c := Config{}
+	// App Config
+	c.App.Addr = ":8080"
+	c.Auth.Secret = []byte("JznqcOJCAEc1aq7Zulm83OtQt7md2gOK")
+
+	// DB config
+	c.DB.Addr = "mysql:3306"
+	c.DB.User = "root"
+	c.DB.Pass = "root"
+	c.DB.Name = "gt-online"
+	return c
 }
 
 func (s *Server) init() {
@@ -75,7 +97,7 @@ func (s *Server) initRouter() {
 	})
 
 	a := &api.API{
-		Auth: auth.NewService(s.storage),
+		Auth: auth.NewService(s.storage, s.cfg.Auth.Secret),
 	}
 	a.Route(s.e)
 }
@@ -87,8 +109,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) Start() {
 	s.init()
-	log.Println("Server start at port 8080")
-	if err := s.e.Run(":8080"); err != nil && err != http.ErrServerClosed {
+	log.Println("Server start at", s.cfg.App.Addr)
+	if err := s.e.Run(s.cfg.App.Addr); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Run server failed: %v", err)
 	}
 }

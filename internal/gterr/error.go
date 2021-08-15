@@ -9,13 +9,23 @@ import (
 type ErrorCode string
 
 const (
-	OK              = "OK"
-	Unknown         = "UNKNOWN"
-	InvalidArgument = "INVALID_ARGUMENT"
-	NotFound        = "NOT_FOUND"
-	AlreadyExists   = "ALREADY_EXISTS"
-	Unimplemented   = "UNIMPLEMENTED"
-	Internal        = "INTERNAL"
+	OK                 = "OK"
+	Cancelled          = "CANCELLED"
+	Unknown            = "UNKNOWN"
+	InvalidArgument    = "INVALID_ARGUMENT"
+	DeadlineExceeded   = "DEADLINE_EXCEEDED"
+	NotFound           = "NOT_FOUND"
+	AlreadyExists      = "ALREADY_EXISTS"
+	PermissionDenied   = "PERMISSION_DENIED"
+	ResourceExhausted  = "RESOURCE_EXHAUSTED"
+	FailedPrecondition = "FAILED_PRECONDITION"
+	Aborted            = "ABORTED"
+	OutOfRange         = "OUT_OF_RANGE"
+	Unimplemented      = "UNIMPLEMENTED"
+	Internal           = "INTERNAL"
+	Unavailable        = "UNAVAILABLE"
+	DataLoss           = "DATA_LOSS"
+	Unauthenticated    = "UNAUTHENTICATED"
 )
 
 type multiErrors []error

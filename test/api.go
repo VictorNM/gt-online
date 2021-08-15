@@ -9,6 +9,11 @@ import (
 	"testing"
 )
 
+const (
+	pathRegister = "/auth/register"
+	pathLogin    = "/auth/login"
+)
+
 type (
 	API struct {
 		addr string
@@ -25,11 +30,29 @@ type (
 	RegisterResponse struct {
 		Email string `json:"email"`
 	}
+
+	LoginRequest struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	LoginResponse struct {
+		AccessToken string `json:"access_token"`
+		TokenType   string `json:"token_type"`
+	}
 )
 
 func (api *API) Register(t *testing.T, req RegisterRequest) (*RegisterResponse, error) {
 	res := new(RegisterResponse)
-	if err := api.send(t, http.MethodPost, "/auth/register", req, res); err != nil {
+	if err := api.send(t, http.MethodPost, pathRegister, req, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (api *API) Login(t *testing.T, req LoginRequest) (*LoginResponse, error) {
+	res := new(LoginResponse)
+	if err := api.send(t, http.MethodPost, pathLogin, req, res); err != nil {
 		return nil, err
 	}
 	return res, nil
