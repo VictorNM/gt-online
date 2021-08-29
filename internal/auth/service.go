@@ -13,10 +13,6 @@ import (
 	"github.com/victornm/gtonline/internal/gterr"
 )
 
-var (
-	ErrNotFound = errors.New("not found")
-)
-
 type (
 	Service struct {
 		storage Storage
@@ -63,7 +59,7 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterR
 		return nil, gterr.New(gterr.AlreadyExists, fmt.Sprintf("Email %s already registered.", req.Email))
 	}
 
-	if err != nil && err != ErrNotFound {
+	if err != nil && err != gterr.ErrNotFound {
 		return nil, gterr.New(gterr.Internal, "", err)
 	}
 
@@ -103,7 +99,7 @@ type (
 
 func (s *Service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, error) {
 	u, err := s.storage.FindUserByEmail(ctx, req.Email)
-	if errors.Is(err, ErrNotFound) {
+	if errors.Is(err, gterr.ErrNotFound) {
 		return nil, gterr.New(gterr.Unauthenticated, "Email or password do not matched.", err)
 	}
 

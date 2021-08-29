@@ -7,6 +7,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/victornm/gtonline/internal/auth"
+	"github.com/victornm/gtonline/internal/gterr"
 )
 
 type Storage struct {
@@ -21,7 +22,7 @@ func (s *Storage) FindUserByEmail(ctx context.Context, email string) (*auth.User
 	u := new(auth.User)
 	err := s.db.GetContext(ctx, u, `SELECT email, password, first_name, last_name FROM users WHERE email=?;`, email)
 	if err == sql.ErrNoRows {
-		return nil, auth.ErrNotFound
+		return nil, gterr.ErrNotFound
 	}
 
 	if err != nil {
