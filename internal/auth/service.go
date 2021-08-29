@@ -50,6 +50,7 @@ type (
 
 	RegisterResponse struct {
 		Email string `json:"email"`
+		Token
 	}
 )
 
@@ -68,19 +69,26 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterR
 		return nil, gterr.New(gterr.Internal, "", err)
 	}
 
-	err = s.storage.CreateUser(ctx, User{
+	u := User{
 		Email:          req.Email,
 		HashedPassword: hashed,
 		FirstName:      req.FirstName,
 		LastName:       req.LastName,
-	})
+	}
+	err = s.storage.CreateUser(ctx, u)
 
+	if err != nil {
+		return nil, gterr.New(gterr.Internal, "", err)
+	}
+
+	token, err := genToken(u, s.secret)
 	if err != nil {
 		return nil, gterr.New(gterr.Internal, "", err)
 	}
 
 	return &RegisterResponse{
 		Email: req.Email,
+		Token: newBearerToken(token),
 	}, nil
 }
 
@@ -92,8 +100,7 @@ type (
 
 	// LoginResponse follow the convention described here: https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
 	LoginResponse struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
+		Token
 	}
 )
 
@@ -118,19 +125,25 @@ func (s *Service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, 
 	}
 
 	return &LoginResponse{
-		AccessToken: token,
-		TokenType:   "bearer",
+		Token: newBearerToken(token),
 	}, nil
 }
 
 type (
-	AuthenticateRequest struct {
-		AccessToken string
-		TokenType   string
+	Token struct {
+		AccessToken string `json:"access_token"`
+		TokenType   string `json:"token_type"`
 	}
 )
 
-func (s *Service) Authenticate(_ context.Context, req AuthenticateRequest) (*UserAuthDTO, error) {
+func newBearerToken(token string) Token {
+	return Token{
+		AccessToken: token,
+		TokenType:   "Bearer",
+	}
+}
+
+func (s *Service) Authenticate(_ context.Context, req Token) (*UserAuthDTO, error) {
 	if !strings.EqualFold(req.TokenType, "bearer") {
 		return nil, gterr.New(gterr.Unauthenticated, "Invalid access token", fmt.Errorf("token type not supported: %v", req.TokenType))
 	}

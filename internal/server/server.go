@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/victornm/gtonline/internal/api"
 	"github.com/victornm/gtonline/internal/auth"
+	"github.com/victornm/gtonline/internal/profile"
 	"github.com/victornm/gtonline/internal/storage"
 )
 
@@ -77,15 +77,16 @@ func (s *Server) initStorage() error {
 	cfg := s.cfg.DB
 	log.Printf("DB config: addr=%s", cfg.Addr)
 
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s", cfg.User, cfg.Pass, cfg.Addr, cfg.Name))
+	stg, err := storage.NewWithConfig(cfg)
 	if err != nil {
 		return fmt.Errorf("open db: %v", err)
 	}
 
-	if err := try(20, db.Ping); err != nil {
+	if err := try(20, stg.Ping); err != nil {
 		return fmt.Errorf("ping db: %v", err)
 	}
-	s.storage = storage.New(db)
+	s.storage = stg
+
 	return nil
 }
 
@@ -97,7 +98,8 @@ func (s *Server) initRouter() {
 	})
 
 	a := &api.API{
-		Auth: auth.NewService(s.storage, s.cfg.Auth.Secret),
+		Auth:    auth.NewService(s.storage, s.cfg.Auth.Secret),
+		Profile: profile.NewService(s.storage),
 	}
 	a.Route(s.e)
 }

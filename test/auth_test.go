@@ -138,8 +138,38 @@ func TestRegisterLogin(t *testing.T) {
 	assert.True(t, strings.EqualFold("bearer", res2.TokenType), "token_type should be 'bearer'")
 }
 
+func TestAuthenticate(t *testing.T) {
+	api := makeAPI()
+	_, err := api.ListSchools(t)
+	e := mustAPIErr(t, err)
+	assert.Equal(t, http.StatusUnauthorized, e.HTTPStatus)
+	assert.Equal(t, gterr.Unauthenticated, e.Code)
+}
+
+func TestListSchools(t *testing.T) {
+	api := makeAPI()
+	token := mustRegister(t, api)
+	api.WithToken(token)
+
+	res, err := api.ListSchools(t)
+	require.NoError(t, err)
+	require.NotEmpty(t, res.Schools)
+}
+
+func mustRegister(t *testing.T, api *API) Token {
+	res, err := api.Register(t, RegisterRequest{
+		Email:                faker.Email(),
+		Password:             "Abc@123_xyZ",
+		PasswordConfirmation: "Abc@123_xyZ",
+		FirstName:            "Steve",
+		LastName:             "Rogers",
+	})
+	require.NoError(t, err, "register failed")
+	return res.Token
+}
+
 func makeAPI() *API {
-	return api
+	return &API{addr: addr}
 }
 
 func mustAPIErr(t *testing.T, err error) *APIError {
@@ -154,8 +184,8 @@ func mustAPIErr(t *testing.T, err error) *APIError {
 }
 
 var (
-	env string
-	api *API
+	env  string
+	addr string
 )
 
 func init() {
@@ -170,7 +200,7 @@ func TestMain(m *testing.M) {
 }
 
 func testMain(m *testing.M) int {
-	var addr = "http://localhost:8080"
+	addr = "http://localhost:8080" // define in docker-compose.yaml
 	if env == "local" {
 		cfg := server.DefaultConfig()
 		cfg.DB.Addr = "localhost:3306"
@@ -180,6 +210,5 @@ func testMain(m *testing.M) int {
 		addr = srv.URL
 	}
 
-	api = &API{addr: addr}
 	return m.Run()
 }

@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `school_types`
 
 CREATE TABLE IF NOT EXISTS `schools`
 (
-    `school_name` varchar(50) NOT NULL,
+    `school_name` varchar(255) NOT NULL,
     `type`        varchar(50) NULL,
     PRIMARY KEY (`school_name`),
     FOREIGN KEY (type) REFERENCES school_types (type_name)

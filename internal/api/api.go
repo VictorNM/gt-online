@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -8,10 +9,12 @@ import (
 
 	"github.com/victornm/gtonline/internal/auth"
 	"github.com/victornm/gtonline/internal/gterr"
+	"github.com/victornm/gtonline/internal/profile"
 )
 
 type API struct {
-	Auth *auth.Service
+	Auth    *auth.Service
+	Profile *profile.Service
 }
 
 func (api *API) register() gin.HandlerFunc {
@@ -52,19 +55,30 @@ func (api *API) authMiddleware() gin.HandlerFunc {
 		header := c.GetHeader("Authorization")
 		tokens := strings.Split(header, " ")
 		if len(tokens) != 2 {
-			api.replyErr(c, gterr.New(gterr.Unauthenticated, "Invalid Authorization header: "+header))
+			api.abort(c, gterr.New(gterr.Unauthenticated, fmt.Sprintf("Invalid Authorization header %q", header)))
 			return
 		}
-		u, err := api.Auth.Authenticate(c.Request.Context(), auth.AuthenticateRequest{
+		u, err := api.Auth.Authenticate(c.Request.Context(), auth.Token{
 			AccessToken: tokens[1],
 			TokenType:   tokens[0],
 		})
 		if err != nil {
-			api.replyErr(c, err)
+			api.abort(c, err)
 			return
 		}
 		c.Set("user", u)
 		c.Next()
+	}
+}
+
+func (api *API) listSchools() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		res, err := api.Profile.ListSchools(c.Request.Context())
+		if err != nil {
+			api.replyErr(c, err)
+			return
+		}
+		api.reply(c, 200, res)
 	}
 }
 
@@ -82,12 +96,18 @@ func (api *API) replyErr(c *gin.Context, err error) {
 	api.reply(c, httpStatus(e.Code), e)
 }
 
+func (api *API) abort(c *gin.Context, err error) {
+	api.replyErr(c, err)
+	c.Abort()
+}
+
 func (api *API) Route(e *gin.Engine) {
 	e.POST("/auth/register", api.register())
 	e.POST("/auth/login", api.login())
 
 	// Auth endpoints
 	e.Use(api.authMiddleware())
+	e.GET("/schools", api.listSchools())
 }
 
 func httpStatus(code gterr.ErrorCode) int {

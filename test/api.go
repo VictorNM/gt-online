@@ -12,11 +12,14 @@ import (
 const (
 	pathRegister = "/auth/register"
 	pathLogin    = "/auth/login"
+	pathSchools  = "/schools"
 )
 
 type (
 	API struct {
 		addr string
+
+		token Token
 	}
 
 	RegisterRequest struct {
@@ -29,6 +32,7 @@ type (
 
 	RegisterResponse struct {
 		Email string `json:"email"`
+		Token
 	}
 
 	LoginRequest struct {
@@ -37,8 +41,14 @@ type (
 	}
 
 	LoginResponse struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
+		Token
+	}
+
+	ListSchoolsResponse struct {
+		Schools []struct {
+			SchoolName string `json:"school_name"`
+			Type       string `json:"type"`
+		}
 	}
 )
 
@@ -58,19 +68,46 @@ func (api *API) Login(t *testing.T, req LoginRequest) (*LoginResponse, error) {
 	return res, nil
 }
 
+func (api *API) ListSchools(t *testing.T) (*ListSchoolsResponse, error) {
+	res := new(ListSchoolsResponse)
+	if err := api.send(t, http.MethodGet, pathSchools, nil, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+type Token struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+}
+
+func (api *API) WithToken(token Token) *API {
+	api.token = token
+	return api
+}
+
 func (api *API) send(t *testing.T, method string, path string, in interface{}, out interface{}) error {
 	t.Helper()
 
-	data, _ := json.Marshal(in)
+	var reader io.Reader
+
+	if in != nil {
+		data, _ := json.Marshal(in)
+		reader = bytes.NewReader(data)
+	}
+
 	u := api.addr + path
 
-	r, err := http.NewRequest(method, u, bytes.NewReader(data))
+	r, err := http.NewRequest(method, u, reader)
 	if err != nil {
 		t.Fatalf("Building HTTP request: %v", err)
 	}
 	r.Header.Set("Content-Type", "application/json")
 
-	t.Logf("Sending request: %s %s %s", r.Method, r.URL, string(data))
+	if tk := api.token.TokenType + " " + api.token.AccessToken; tk != "" {
+		r.Header.Set("Authorization", tk)
+	}
+
 	w, err := http.DefaultClient.Do(r)
 	if err != nil {
 		t.Fatalf("Sendind HTTP request: %v", err)
@@ -78,8 +115,6 @@ func (api *API) send(t *testing.T, method string, path string, in interface{}, o
 	defer w.Body.Close()
 
 	b, _ := io.ReadAll(w.Body)
-
-	t.Logf("Received response: HTTP status=%d body=%s", w.StatusCode, string(b))
 
 	if w.StatusCode < 200 || w.StatusCode > 299 {
 		e := new(APIError)

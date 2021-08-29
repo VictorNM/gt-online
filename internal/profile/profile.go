@@ -1,4 +1,4 @@
-package user
+package profile
 
 import (
 	"context"
@@ -38,18 +38,30 @@ type (
 	}
 
 	Storage interface {
-		UpdateProfile(ctx context.Context, req UpdateProfileRequest) error
+		ListSchools(ctx context.Context) ([]School, error)
 	}
 )
 
-func (s *Service) UpdateProfile(ctx context.Context, req UpdateProfileRequest) (*Profile, error) {
-	err := s.storage.UpdateProfile(ctx, req)
-	if err == gterr.ErrNotFound {
-		return nil, gterr.New(gterr.NotFound, "User not exist", err)
-	}
-	return s.GetProfile(ctx, req.Email)
+func NewService(storage Storage) *Service {
+	return &Service{storage: storage}
 }
 
-func (s *Service) GetProfile(ctx context.Context, email string) (*Profile, error) {
-	return nil, nil
+type (
+	School struct {
+		SchoolName string `json:"school_name" db:"school_name"`
+		Type       string `json:"type" db:"type"`
+	}
+
+	ListSchoolsResponse struct {
+		Schools []School
+	}
+)
+
+func (s *Service) ListSchools(ctx context.Context) (*ListSchoolsResponse, error) {
+	schools, err := s.storage.ListSchools(ctx)
+	if err != nil {
+		return nil, gterr.New(gterr.Internal, "", err)
+	}
+
+	return &ListSchoolsResponse{Schools: schools}, nil
 }

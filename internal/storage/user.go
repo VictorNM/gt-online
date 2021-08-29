@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 
@@ -10,12 +11,39 @@ import (
 	"github.com/victornm/gtonline/internal/gterr"
 )
 
-type Storage struct {
-	db *sqlx.DB
-}
+const driver = "mysql"
+
+type (
+	Storage struct {
+		db *sqlx.DB
+	}
+
+	Config struct {
+		Addr string
+		User string
+		Pass string
+		Name string
+	}
+)
 
 func New(db *sql.DB) *Storage {
 	return &Storage{db: sqlx.NewDb(db, "mysql")}
+}
+
+func NewWithConfig(cfg Config) (*Storage, error) {
+	db, err := sqlx.Open(driver, fmt.Sprintf("%s:%s@tcp(%s)/%s", cfg.User, cfg.Pass, cfg.Addr, cfg.Name))
+	if err != nil {
+		return nil, fmt.Errorf("open db: %v", err)
+	}
+	return &Storage{db: db}, nil
+}
+
+func (s *Storage) Ping() error {
+	return s.db.Ping()
+}
+
+func (s *Storage) Close() error {
+	return s.db.Close()
 }
 
 func (s *Storage) FindUserByEmail(ctx context.Context, email string) (*auth.User, error) {
