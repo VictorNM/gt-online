@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -46,6 +47,27 @@ func (api *API) login() gin.HandlerFunc {
 	}
 }
 
+func (api *API) authMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		header := c.GetHeader("Authorization")
+		tokens := strings.Split(header, " ")
+		if len(tokens) != 2 {
+			api.replyErr(c, gterr.New(gterr.Unauthenticated, "Invalid Authorization header: "+header))
+			return
+		}
+		u, err := api.Auth.Authenticate(c.Request.Context(), auth.AuthenticateRequest{
+			AccessToken: tokens[1],
+			TokenType:   tokens[0],
+		})
+		if err != nil {
+			api.replyErr(c, err)
+			return
+		}
+		c.Set("user", u)
+		c.Next()
+	}
+}
+
 func (api *API) bind(c *gin.Context, req interface{}) error {
 	return c.ShouldBindJSON(req)
 }
@@ -63,6 +85,9 @@ func (api *API) replyErr(c *gin.Context, err error) {
 func (api *API) Route(e *gin.Engine) {
 	e.POST("/auth/register", api.register())
 	e.POST("/auth/login", api.login())
+
+	// Auth endpoints
+	e.Use(api.authMiddleware())
 }
 
 func httpStatus(code gterr.ErrorCode) int {

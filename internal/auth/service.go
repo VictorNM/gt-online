@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -126,6 +127,30 @@ func (s *Service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, 
 	}, nil
 }
 
+type (
+	AuthenticateRequest struct {
+		AccessToken string
+		TokenType   string
+	}
+)
+
+func (s *Service) Authenticate(_ context.Context, req AuthenticateRequest) (*UserAuthDTO, error) {
+	if !strings.EqualFold(req.TokenType, "bearer") {
+		return nil, gterr.New(gterr.Unauthenticated, "Invalid access token", fmt.Errorf("token type not supported: %v", req.TokenType))
+	}
+
+	u, valid, err := parseToken(req.AccessToken, s.secret)
+	if err != nil {
+		return nil, gterr.New(gterr.Internal, "", err)
+	}
+
+	if !valid {
+		return nil, gterr.New(gterr.Unauthenticated, "Invalid access token")
+	}
+
+	return u, nil
+}
+
 func hash(pass string) (string, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
@@ -162,6 +187,24 @@ func genToken(u User, secret []byte) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func parseToken(tokenString string, secret []byte) (*UserAuthDTO, bool, error) {
+	var claims jwtClaims
+
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (i interface{}, err error) {
+		return secret, nil
+	})
+
+	if err != nil {
+		return nil, false, fmt.Errorf("parse token: %v", err)
+	}
+
+	if !token.Valid {
+		return nil, false, nil
+	}
+
+	return claims.UserAuthDTO, true, nil
 }
 
 type jwtClaims struct {
