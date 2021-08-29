@@ -38,6 +38,8 @@ You will need to have the following installed:
 All APIs will follow the below rules:
 
 - Content-Type: "application/json"
+- Authenticate: using header `Authorization`: `<token_type> <access_token>`
+  - Example: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9ueUBzdGFyay5jb20ifQ.QfCpJBCrw4RzWM3OyDwiuTrZLAMefrSBF-YuVvodZoY`
 - Error response: if the response HTTP status is not 2xx, an error will be return
    ```
    code:    string
@@ -81,7 +83,9 @@ All APIs will follow the below rules:
 - 200: Success
    ```json
    {
-     "email": "tony@stark.com"
+     "email": "tony@stark.com",
+     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9ueUBzdGFyay5jb20ifQ.QfCpJBCrw4RzWM3OyDwiuTrZLAMefrSBF-YuVvodZoY",
+     "token_type": "Bearer"
    }
    ```
 
@@ -111,5 +115,31 @@ All APIs will follow the below rules:
    {
      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9ueUBzdGFyay5jb20ifQ.QfCpJBCrw4RzWM3OyDwiuTrZLAMefrSBF-YuVvodZoY",
      "token_type": "Bearer"
+   }
+   ```
+
+### List Schools
+
+#### Request
+
+- Method: GET
+- Path: /schools
+- Authenticate: yes
+
+#### Response
+
+- 200: Success
+   ```json
+   {
+     "schools": [
+        {
+          "schools_name": "Aukamm Elementary School",
+          "type": "Elementary School"
+        },
+        {
+          "schools_name": "Harvard University",
+          "type": "University"
+        }
+     ]
    }
    ```
