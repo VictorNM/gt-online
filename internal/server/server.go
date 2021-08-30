@@ -92,7 +92,11 @@ func (s *Server) initStorage() error {
 
 func (s *Server) initRouter() {
 	s.e = gin.Default()
-	s.e.Use(cors.Default())
+
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
+	s.e.Use(cors.New(corsConfig))
 	s.e.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, `{"ping": "pong"}`)
 	})
