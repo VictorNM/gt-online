@@ -32,7 +32,7 @@ type (
 		}
 
 		Auth struct {
-			Secret []byte
+			Secret string
 		}
 
 		DB struct {
@@ -54,7 +54,7 @@ func DefaultConfig() Config {
 	c := Config{}
 	// App Config
 	c.App.Addr = ":8080"
-	c.Auth.Secret = []byte("JznqcOJCAEc1aq7Zulm83OtQt7md2gOK")
+	c.Auth.Secret = "JznqcOJCAEc1aq7Zulm83OtQt7md2gOK"
 
 	// DB config
 	c.DB.Addr = "mysql:3306"
@@ -75,7 +75,7 @@ func (s *Server) init() {
 
 func (s *Server) initStorage() error {
 	cfg := s.cfg.DB
-	log.Printf("DB config: addr=%s", cfg.Addr)
+	log.Printf("DB config: addr=%s, user=%s, name=%s", cfg.Addr, cfg.User, cfg.Name)
 
 	stg, err := storage.NewWithConfig(cfg)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *Server) initRouter() {
 	})
 
 	a := &api.API{
-		Auth:    auth.NewService(s.storage, s.cfg.Auth.Secret),
+		Auth:    auth.NewService(s.storage, []byte(s.cfg.Auth.Secret)),
 		Profile: profile.NewService(s.storage),
 	}
 	a.Route(s.e)

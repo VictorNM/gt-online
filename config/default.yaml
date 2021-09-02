@@ -1,0 +1,11 @@
+app:
+  addr: :8080
+
+auth:
+  secret: JznqcOJCAEc1aq7Zulm83OtQt7md2gOK
+
+db:
+  addr: localhost:3306
+  user: root
+  pass: root
+  name: gt-online

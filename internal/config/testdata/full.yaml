@@ -1,0 +1,9 @@
+mode: "sandbox"
+
+app:
+  name: "gt-online"
+  port: 8080
+
+cache:
+  enable: true
+  expired_minute: 10

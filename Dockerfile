@@ -10,5 +10,6 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./app
 FROM alpine:latest
 # Copy binary from builder
 COPY --from=builder /app/app /app
+COPY --from=builder /app/config /config
 ENTRYPOINT ["/app"]
 EXPOSE 8080

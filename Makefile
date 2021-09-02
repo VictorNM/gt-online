@@ -7,6 +7,9 @@ help: ## Show this help, targets are ordered by alphabet
 build: ## Re-build backend service if update code
 	docker compose build
 
+build-az: ## Build and push to Azure Container Registry
+	az acr build --registry gtonline --image gt-online .
+
 up: ## Run all services locally using Docker
 	docker compose up -d
 
@@ -26,8 +29,10 @@ dev-down: ## Shutdown the local environment
 	cd devstack && docker compose down
 
 .PHONY: test
-test: ## Test when develop
-	go test ./test -v
+test: ## Run unit test
+	go test ./internal/... -race
 
-test-docker: ## Test with docker
-	go test ./test -env=docker
+
+env ?= local
+test-e2e: ## Test with docker
+	go test ./test -env=$(env)
