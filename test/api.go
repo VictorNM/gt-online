@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	pathRegister = "/auth/register"
-	pathLogin    = "/auth/login"
-	pathSchools  = "/schools"
+	pathRegister  = "/auth/register"
+	pathLogin     = "/auth/login"
+	pathSchools   = "/schools"
+	pathEmployers = "/employers"
 )
 
 type (
@@ -48,7 +49,13 @@ type (
 		Schools []struct {
 			SchoolName string `json:"school_name"`
 			Type       string `json:"type"`
-		}
+		} `json:"schools"`
+	}
+
+	ListEmployersResponse struct {
+		Employers []struct {
+			EmployerName string `json:"employer_name"`
+		} `json:"employers"`
 	}
 )
 
@@ -71,6 +78,14 @@ func (api *API) Login(t *testing.T, req LoginRequest) (*LoginResponse, error) {
 func (api *API) ListSchools(t *testing.T) (*ListSchoolsResponse, error) {
 	res := new(ListSchoolsResponse)
 	if err := api.send(t, http.MethodGet, pathSchools, nil, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (api *API) ListEmployers(t *testing.T) (*ListEmployersResponse, error) {
+	res := new(ListEmployersResponse)
+	if err := api.send(t, http.MethodGet, pathEmployers, nil, res); err != nil {
 		return nil, err
 	}
 	return res, nil

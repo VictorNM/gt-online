@@ -26,11 +26,7 @@ type (
 	}
 )
 
-func New(db *sql.DB) *Storage {
-	return &Storage{db: sqlx.NewDb(db, "mysql")}
-}
-
-func NewWithConfig(cfg Config) (*Storage, error) {
+func New(cfg Config) (*Storage, error) {
 	db, err := sqlx.Open(driver, fmt.Sprintf("%s:%s@tcp(%s)/%s", cfg.User, cfg.Pass, cfg.Addr, cfg.Name))
 	if err != nil {
 		return nil, fmt.Errorf("open db: %v", err)

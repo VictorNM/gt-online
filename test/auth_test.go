@@ -146,7 +146,7 @@ func TestAuthenticate(t *testing.T) {
 	assert.Equal(t, gterr.Unauthenticated, e.Code)
 }
 
-func TestListSchools(t *testing.T) {
+func TestEditProfile_ListSchools(t *testing.T) {
 	api := makeAPI()
 	token := mustRegister(t, api)
 	api.WithToken(token)
@@ -154,6 +154,16 @@ func TestListSchools(t *testing.T) {
 	res, err := api.ListSchools(t)
 	require.NoError(t, err)
 	require.NotEmpty(t, res.Schools)
+}
+
+func TestEditProfile_ListEmployers(t *testing.T) {
+	api := makeAPI()
+	token := mustRegister(t, api)
+	api.WithToken(token)
+
+	res, err := api.ListEmployers(t)
+	require.NoError(t, err)
+	require.NotEmpty(t, res.Employers)
 }
 
 func mustRegister(t *testing.T, api *API) Token {

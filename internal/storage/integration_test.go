@@ -1,4 +1,5 @@
-//+build integration
+//go:build integration
+// +build integration
 
 package storage_test
 
@@ -20,8 +21,15 @@ func TestStorage_ListSchools(t *testing.T) {
 
 	schools, err := s.ListSchools(context.Background())
 	require.NoError(t, err)
-	require.True(t, len(schools) > 0)
-	t.Logf("%#v", schools)
+	require.NotEmpty(t, schools)
+}
+
+func TestStorage_ListEmployers(t *testing.T) {
+	s := makeStorage(t)
+
+	employers, err := s.ListEmployers(context.Background())
+	require.NoError(t, err)
+	require.NotEmpty(t, employers)
 }
 
 func makeStorage(t *testing.T) *storage.Storage {
@@ -29,7 +37,7 @@ func makeStorage(t *testing.T) *storage.Storage {
 		var err error
 		cfg := server.DefaultConfig().DB
 		cfg.Addr = "localhost:3306"
-		s, err = storage.NewWithConfig(cfg)
+		s, err = storage.New(cfg)
 		require.NoError(t, err)
 		require.NoError(t, s.Ping())
 	})

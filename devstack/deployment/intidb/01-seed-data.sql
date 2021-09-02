@@ -17,3 +17,16 @@ VALUES ('Aukamm Elementary School', 'Elementary School'),
        ('Harvard University', 'University'),
        ('University of Oxford', 'University'),
        ('Georgia Institute of Technology', 'University');
+
+
+INSERT INTO employers (employer_name)
+VALUES ('Apple'),
+       ('Microsoft'),
+       ('Alphabet'),
+       ('Amazon'),
+       ('Facebook'),
+       ('Tesla'),
+       ('Walmart'),
+       ('Toyota Motor'),
+       ('Volkswagen'),
+       ('Berkshire Hathaway');

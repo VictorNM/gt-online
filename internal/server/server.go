@@ -77,7 +77,7 @@ func (s *Server) initStorage() error {
 	cfg := s.cfg.DB
 	log.Printf("DB config: addr=%s, user=%s, name=%s", cfg.Addr, cfg.User, cfg.Name)
 
-	stg, err := storage.NewWithConfig(cfg)
+	stg, err := storage.New(cfg)
 	if err != nil {
 		return fmt.Errorf("open db: %v", err)
 	}

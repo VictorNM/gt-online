@@ -39,6 +39,7 @@ type (
 
 	Storage interface {
 		ListSchools(ctx context.Context) ([]School, error)
+		ListEmployers(ctx context.Context) ([]Employer, error)
 	}
 )
 
@@ -53,7 +54,15 @@ type (
 	}
 
 	ListSchoolsResponse struct {
-		Schools []School
+		Schools []School `json:"schools"`
+	}
+
+	Employer struct {
+		EmployerName string `json:"employer_name" db:"employer_name"`
+	}
+
+	ListEmployerResponse struct {
+		Employers []Employer `json:"employers"`
 	}
 )
 
@@ -64,4 +73,13 @@ func (s *Service) ListSchools(ctx context.Context) (*ListSchoolsResponse, error)
 	}
 
 	return &ListSchoolsResponse{Schools: schools}, nil
+}
+
+func (s *Service) ListEmployers(ctx context.Context) (*ListEmployerResponse, error) {
+	employers, err := s.storage.ListEmployers(ctx)
+	if err != nil {
+		return nil, gterr.New(gterr.Internal, "", err)
+	}
+
+	return &ListEmployerResponse{Employers: employers}, nil
 }

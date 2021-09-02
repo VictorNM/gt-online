@@ -150,7 +150,7 @@ func (s *Service) Authenticate(_ context.Context, req Token) (*UserAuthDTO, erro
 
 	u, valid, err := parseToken(req.AccessToken, s.secret)
 	if err != nil {
-		return nil, gterr.New(gterr.Internal, "", err)
+		return nil, gterr.New(gterr.Unauthenticated, "Invalid access token", err)
 	}
 
 	if !valid {

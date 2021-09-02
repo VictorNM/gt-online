@@ -81,6 +81,17 @@ func (api *API) listSchools() gin.HandlerFunc {
 	}
 }
 
+func (api *API) listEmployers() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		res, err := api.Profile.ListEmployers(c.Request.Context())
+		if err != nil {
+			api.replyErr(c, err)
+			return
+		}
+		api.reply(c, 200, res)
+	}
+}
+
 func (api *API) bind(c *gin.Context, req interface{}) error {
 	return c.ShouldBindJSON(req)
 }
@@ -107,6 +118,7 @@ func (api *API) Route(e *gin.Engine) {
 	// Auth endpoints
 	e.Use(api.authMiddleware())
 	e.GET("/schools", api.listSchools())
+	e.GET("/employers", api.listEmployers())
 }
 
 func httpStatus(code gterr.ErrorCode) int {
