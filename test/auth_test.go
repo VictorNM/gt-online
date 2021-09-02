@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/bxcodec/faker/v3"
@@ -116,26 +115,23 @@ func TestLogin_Validation(t *testing.T) {
 	}
 }
 
+// TestRegisterLogin test feature user login after register successfully
 func TestRegisterLogin(t *testing.T) {
 	api := makeAPI()
-	req := RegisterRequest{
-		Email:                faker.Email(),
-		Password:             "Abc@123_xyZ",
-		PasswordConfirmation: "Abc@123_xyZ",
-		FirstName:            "Hoa",
-		LastName:             "Binh",
-	}
-	res, err := api.Register(t, req)
-	require.NoError(t, err)
-	assert.Equal(t, req.Email, res.Email)
 
-	res2, err := api.Login(t, LoginRequest{
-		Email:    req.Email,
-		Password: req.Password,
+	// Given: a user register successfully
+	email, password := mustRegister(t, api)
+
+	// When: login with the registered email, password
+	res, err := api.Login(t, LoginRequest{
+		Email:    email,
+		Password: password,
 	})
+
+	// Then: should not error, and return non-empty AccessToken and TokenType
 	require.NoError(t, err)
-	assert.NotEmpty(t, res2.AccessToken, "access_token should not empty")
-	assert.True(t, strings.EqualFold("bearer", res2.TokenType), "token_type should be 'bearer'")
+	assert.NotEmpty(t, res.AccessToken, "access_token should not empty")
+	assert.NotEmpty(t, res.TokenType, "token_type should not empty")
 }
 
 func TestAuthenticate(t *testing.T) {
@@ -146,36 +142,86 @@ func TestAuthenticate(t *testing.T) {
 	assert.Equal(t, gterr.Unauthenticated, e.Code)
 }
 
-func TestEditProfile_ListSchools(t *testing.T) {
-	api := makeAPI()
-	token := mustRegister(t, api)
-	api.WithToken(token)
+type (
+	register struct {
+		req RegisterRequest
+		res *RegisterResponse
+	}
+	listSchools struct {
+		res *ListSchoolsResponse
+	}
+	listEmployers struct {
+		res *ListEmployersResponse
+	}
+)
 
-	res, err := api.ListSchools(t)
-	require.NoError(t, err)
-	require.NotEmpty(t, res.Schools)
+// TestRegisterEditProfile test feature new user register, then navigate to EditProfile and submit form.
+func TestRegisterEditProfile(t *testing.T) {
+	var (
+		api = makeAPI()
+
+		register      register
+		listSchools   listSchools
+		listEmployers listEmployers
+	)
+
+	// Step 1: register new user
+	{
+		// Given: User with new email and correct information
+		req := aValidRegisterRequest()
+
+		// When: Register using this information
+		res, err := api.Register(t, req)
+
+		// Then: Should not error
+		require.NoError(t, err)
+		register.req, register.res = req, res
+	}
+
+	// Use token from step 1 for next steps
+	api.WithToken(Token{AccessToken: register.res.AccessToken, TokenType: register.res.TokenType})
+
+	// Step 2.1: list available schools for user to EditProfile
+	{
+		// When: Call list schools
+		res, err := api.ListSchools(t)
+
+		// Then: Should not error, and return non-empty schools list
+		require.NoError(t, err)
+		require.NotEmpty(t, res.Schools)
+
+		listSchools.res = res
+	}
+
+	// Step 2.2: list available employers for user to EditProfile
+	{
+		// When: Call list schools
+		res, err := api.ListEmployers(t)
+
+		// Then: Should not error, and return non-empty schools list
+		require.NoError(t, err)
+		require.NotEmpty(t, res.Employers)
+
+		listEmployers.res = res
+	}
 }
 
-func TestEditProfile_ListEmployers(t *testing.T) {
-	api := makeAPI()
-	token := mustRegister(t, api)
-	api.WithToken(token)
-
-	res, err := api.ListEmployers(t)
-	require.NoError(t, err)
-	require.NotEmpty(t, res.Employers)
+func aValidRegisterRequest() RegisterRequest {
+	req := RegisterRequest{
+		Email:     faker.Email(),
+		Password:  faker.Password(),
+		FirstName: faker.FirstName(),
+		LastName:  faker.LastName(),
+	}
+	req.PasswordConfirmation = req.Password
+	return req
 }
 
-func mustRegister(t *testing.T, api *API) Token {
-	res, err := api.Register(t, RegisterRequest{
-		Email:                faker.Email(),
-		Password:             "Abc@123_xyZ",
-		PasswordConfirmation: "Abc@123_xyZ",
-		FirstName:            "Steve",
-		LastName:             "Rogers",
-	})
+func mustRegister(t *testing.T, api *API) (email string, password string) {
+	req := aValidRegisterRequest()
+	_, err := api.Register(t, req)
 	require.NoError(t, err, "register failed")
-	return res.Token
+	return req.Email, req.Password
 }
 
 func makeAPI() *API {
@@ -212,13 +258,24 @@ func TestMain(m *testing.M) {
 func testMain(m *testing.M) int {
 	addr = "http://localhost:8080" // define in docker-compose.yaml
 	if env == "local" {
-		cfg := server.DefaultConfig()
-		cfg.DB.Addr = "localhost:3306"
-		s := server.New(cfg)
-		srv := httptest.NewServer(s)
+		srv := httptest.NewServer(server.New(testConfig()))
 		defer srv.Close()
 		addr = srv.URL
 	}
 
 	return m.Run()
+}
+
+func testConfig() server.Config {
+	c := server.Config{}
+	// App Config
+	c.App.Addr = ":8080"
+	c.Auth.Secret = "JznqcOJCAEc1aq7Zulm83OtQt7md2gOK"
+
+	// DB config
+	c.DB.Addr = "localhost:3306"
+	c.DB.User = "root"
+	c.DB.Pass = "root"
+	c.DB.Name = "gt-online"
+	return c
 }
