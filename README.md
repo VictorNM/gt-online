@@ -143,3 +143,27 @@ All APIs will follow the below rules:
      ]
    }
    ```
+
+### List Employers
+
+#### Request
+
+- Method: GET
+- Path: /employers
+- Authenticate: yes
+
+#### Response
+
+- 200: Success
+   ```json
+   {
+     "employers": [
+        {
+          "employers_name": "Microsoft"
+        },
+        {
+          "employers_name": "Alphabet"
+        }
+     ]
+   }
+   ```
