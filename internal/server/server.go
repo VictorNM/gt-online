@@ -98,7 +98,7 @@ func (s *Server) initRouter() {
 	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
 	s.e.Use(cors.New(corsConfig))
 	s.e.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, `{"ping": "pong"}`)
+		c.JSON(200, map[string]string{"ping": "pong"})
 	})
 
 	a := &api.API{

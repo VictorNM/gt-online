@@ -11,5 +11,6 @@ FROM alpine:latest
 # Copy binary from builder
 COPY --from=builder /app/app /app
 COPY --from=builder /app/config /config
+ENV TZ Asia/Ho_Chi_Minh
 ENTRYPOINT ["/app"]
 EXPOSE 8080

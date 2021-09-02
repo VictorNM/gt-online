@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -55,7 +54,7 @@ func (api *API) authMiddleware() gin.HandlerFunc {
 		header := c.GetHeader("Authorization")
 		tokens := strings.Split(header, " ")
 		if len(tokens) != 2 {
-			api.abort(c, gterr.New(gterr.Unauthenticated, fmt.Sprintf("Invalid Authorization header %q", header)))
+			api.abort(c, gterr.New(gterr.Unauthenticated, ""))
 			return
 		}
 		u, err := api.Auth.Authenticate(c.Request.Context(), auth.Token{
