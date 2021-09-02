@@ -147,11 +147,18 @@ type (
 		req RegisterRequest
 		res *RegisterResponse
 	}
+
 	listSchools struct {
 		res *ListSchoolsResponse
 	}
+
 	listEmployers struct {
 		res *ListEmployersResponse
+	}
+
+	updateProfile struct {
+		req UpdateProfileRequest
+		res *Profile
 	}
 )
 
@@ -163,6 +170,7 @@ func TestRegisterEditProfile(t *testing.T) {
 		register      register
 		listSchools   listSchools
 		listEmployers listEmployers
+		updateProfile updateProfile
 	)
 
 	// Step 1: register new user
@@ -203,6 +211,51 @@ func TestRegisterEditProfile(t *testing.T) {
 		require.NotEmpty(t, res.Employers)
 
 		listEmployers.res = res
+	}
+
+	// Step 3: user fill and submit EditProfile form
+	{
+		req := UpdateProfileRequest{
+			Sex:         "M",
+			Birthdate:   "29/05/1970",
+			CurrentCity: "New York",
+			Hometown:    "New York",
+			Interests:   []string{"Technology"},
+			Education: []Attend{{
+				School:        listSchools.res.Schools[0].SchoolName,
+				YearGraduated: 1980,
+			}},
+			Professional: []Employment{{
+				Employer: listEmployers.res.Employers[0].EmployerName,
+				JobTitle: "CEO",
+			}},
+		}
+		res, err := api.UpdateProfile(t, req)
+
+		// Then: Should not error, and return an updated profile
+		require.NoError(t, err, "update profile failed")
+		require.Equal(t, res, &Profile{
+			Email:        register.req.Email,
+			FirstName:    register.req.FirstName,
+			LastName:     register.req.LastName,
+			Sex:          req.Sex,
+			Birthdate:    req.Birthdate,
+			CurrentCity:  req.CurrentCity,
+			Hometown:     req.Hometown,
+			Interests:    req.Interests,
+			Education:    req.Education,
+			Professional: req.Professional,
+		}, "the returned profile after updated is not match expectation")
+
+		updateProfile.req, updateProfile.res = req, res
+	}
+
+	// Step 4: user query the profile again
+	{
+		res, err := api.GetProfile(t)
+		// Then: Should not error, and return an updated profile
+		require.NoError(t, err, "update profile failed")
+		require.Equal(t, updateProfile.res, res, "the returned profile is not match with previous response of UpdateProfile")
 	}
 }
 

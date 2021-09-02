@@ -11,8 +11,6 @@ import (
 	"github.com/victornm/gtonline/internal/gterr"
 )
 
-const driver = "mysql"
-
 type (
 	Storage struct {
 		db *sqlx.DB
@@ -27,7 +25,7 @@ type (
 )
 
 func New(cfg Config) (*Storage, error) {
-	db, err := sqlx.Open(driver, fmt.Sprintf("%s:%s@tcp(%s)/%s", cfg.User, cfg.Pass, cfg.Addr, cfg.Name))
+	db, err := sqlx.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true", cfg.User, cfg.Pass, cfg.Addr, cfg.Name))
 	if err != nil {
 		return nil, fmt.Errorf("open db: %v", err)
 	}

@@ -14,6 +14,7 @@ const (
 	pathLogin     = "/auth/login"
 	pathSchools   = "/schools"
 	pathEmployers = "/employers"
+	pathProfile   = "/users/profile"
 )
 
 type (
@@ -57,6 +58,39 @@ type (
 			EmployerName string `json:"employer_name"`
 		} `json:"employers"`
 	}
+
+	UpdateProfileRequest struct {
+		Sex          string       `json:"sex"`
+		Birthdate    string       `json:"birthdate"`
+		CurrentCity  string       `json:"current_city"`
+		Hometown     string       `json:"hometown"`
+		Interests    []string     `json:"interests"`
+		Education    []Attend     `json:"education"`
+		Professional []Employment `json:"professional"`
+	}
+
+	Attend struct {
+		School        string `json:"school"`
+		YearGraduated int    `json:"year_graduated"`
+	}
+
+	Employment struct {
+		Employer string `json:"employer"`
+		JobTitle string `json:"job_title"`
+	}
+
+	Profile struct {
+		Email        string       `json:"email"`
+		FirstName    string       `json:"first_name"`
+		LastName     string       `json:"last_name"`
+		Sex          string       `json:"sex"`
+		Birthdate    string       `json:"birthdate"`
+		CurrentCity  string       `json:"current_city"`
+		Hometown     string       `json:"hometown"`
+		Interests    []string     `json:"interests"`
+		Education    []Attend     `json:"education"`
+		Professional []Employment `json:"professional"`
+	}
 )
 
 func (api *API) Register(t *testing.T, req RegisterRequest) (*RegisterResponse, error) {
@@ -86,6 +120,22 @@ func (api *API) ListSchools(t *testing.T) (*ListSchoolsResponse, error) {
 func (api *API) ListEmployers(t *testing.T) (*ListEmployersResponse, error) {
 	res := new(ListEmployersResponse)
 	if err := api.send(t, http.MethodGet, pathEmployers, nil, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (api *API) GetProfile(t *testing.T) (*Profile, error) {
+	res := new(Profile)
+	if err := api.send(t, http.MethodGet, pathProfile, nil, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (api *API) UpdateProfile(t *testing.T, req UpdateProfileRequest) (*Profile, error) {
+	res := new(Profile)
+	if err := api.send(t, http.MethodPut, pathProfile, req, res); err != nil {
 		return nil, err
 	}
 	return res, nil

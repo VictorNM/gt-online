@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -92,6 +93,58 @@ func (api *API) listEmployers() gin.HandlerFunc {
 	}
 }
 
+func (api *API) getProfile() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		u, ok := api.userFromContext(c)
+		if !ok {
+			api.replyErr(c, gterr.New(gterr.Internal, "", fmt.Errorf("can't get User from gin.Context")))
+			return
+		}
+
+		res, err := api.Profile.GetProfile(c.Request.Context(), profile.GetProfileRequest{
+			Email: u.Email,
+		})
+		if err != nil {
+			api.replyErr(c, err)
+			return
+		}
+
+		api.reply(c, 200, res)
+	}
+}
+
+func (api *API) updateProfile() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req profile.UpdateProfileRequest
+		if err := api.bind(c, &req); err != nil {
+			api.replyErr(c, gterr.New(gterr.InvalidArgument, err.Error(), err))
+			return
+		}
+
+		u, ok := api.userFromContext(c)
+		if !ok {
+			api.replyErr(c, gterr.New(gterr.Internal, "", fmt.Errorf("can't get User from gin.Context")))
+			return
+		}
+		req.Email = u.Email
+
+		res, err := api.Profile.UpdateProfile(c.Request.Context(), req)
+		if err != nil {
+			api.replyErr(c, err)
+			return
+		}
+
+		api.reply(c, 200, res)
+	}
+}
+
+func (api *API) userFromContext(c *gin.Context) (*auth.UserAuthDTO, bool) {
+	var u *auth.UserAuthDTO
+	v, _ := c.Get("user")
+	u, ok := v.(*auth.UserAuthDTO)
+	return u, ok
+}
+
 func (api *API) bind(c *gin.Context, req interface{}) error {
 	return c.ShouldBindJSON(req)
 }
@@ -119,6 +172,8 @@ func (api *API) Route(e *gin.Engine) {
 	e.Use(api.authMiddleware())
 	e.GET("/schools", api.listSchools())
 	e.GET("/employers", api.listEmployers())
+	e.GET("/users/profile", api.getProfile())
+	e.PUT("/users/profile", api.updateProfile())
 }
 
 func httpStatus(code gterr.ErrorCode) int {
