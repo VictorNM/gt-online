@@ -164,6 +164,7 @@ All APIs will follow the below rules:
 - Body:
     ```
     email:                  string, required
+    sex:                    string, enum: "M", "F"
     birthdate:              string, format: DD/MM/YYYY
     current_city            string
     hometown                string

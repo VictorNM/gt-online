@@ -96,7 +96,7 @@ func (s *Service) GetProfile(ctx context.Context, req GetProfileRequest) (*Profi
 
 type UpdateProfileRequest struct {
 	Email        string       `json:"email"`
-	Sex          string       `json:"sex"`
+	Sex          string       `json:"sex" binding:"oneof='' M' 'F'"`
 	Birthdate    time.Time    `json:"birthdate"`
 	CurrentCity  string       `json:"current_city"`
 	Hometown     string       `json:"hometown"`
