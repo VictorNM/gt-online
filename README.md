@@ -129,11 +129,102 @@ All APIs will follow the below rules:
 #### Response
 
 - 200: Success
-   ```json
-   {
-     
-   }
-   ```
+    ```json
+    {
+      "email": "tony@stark.com",
+      "first_name": "Tony",
+      "last_name": "Stark",
+      "sex": "M",
+      "birthdate": "29/05/1970",
+      "current_city": "New York",
+      "hometown": "New York",
+      "interests": ["Technology"],
+      "education": [
+        {
+            "school": "Harvard University",
+            "year_graduated": 1992
+        }
+      ],
+      "professional": [
+        {
+            "employer": "Alphabet",
+            "job_title": "President"
+        }
+      ]
+    }
+    ```
+
+### Update Profile
+
+#### Request
+
+- Method: PUT
+- Path: /users/profile
+- Authenticate: yes
+- Body:
+    ```
+    email:                  string, required
+    birthdate:              string, format: DD/MM/YYYY
+    current_city            string
+    hometown                string
+    interests               []string
+    education               []object
+        - school            string
+        - year_graduated    int
+    professional            []object
+        - employer          string
+        - job_title         int
+    ```
+  Example:
+    ```json
+    {
+      "sex": "M",
+      "birthdate": "29/05/1970",
+      "current_city": "New York",
+      "hometown": "New York",
+      "interests": ["Technology"],
+      "education": [
+        {
+            "school": "Harvard University",
+            "year_graduated": 1992
+        }
+      ],
+      "professional": [
+        {
+            "employer": "Alphabet",
+            "job_title": "President"
+        }
+      ]
+    }
+    ```
+
+#### Response
+
+- 200: Success
+    ```json
+    {
+      "email": "tony@stark.com",
+      "first_name": "Tony",
+      "last_name": "Stark",
+      "sex": "M",
+      "birthdate": "29/05/1970",
+      "current_city": "New York",
+      "hometown": "New York",
+      "interests": ["Technology"],
+      "education": [
+        {
+            "school": "Harvard University",
+            "year_graduated": 1992
+        }
+      ],
+      "professional": [
+        {
+            "employer": "Alphabet",
+            "job_title": "President"
+        }
+      ]
+    }
+    ```
 
 ### List Schools
 
