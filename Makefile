@@ -4,6 +4,9 @@ help: ## Show this help, targets are ordered by alphabet
 	@echo 'targets:'
 	@egrep '^(.+)\:\ .*##\ (.+)' ${MAKEFILE_LIST} | sort | sed 's/:.*##/#/' | column -t -c 2 -s '#'
 
+vet: ## Run go vet
+	go vet -tags=integration ./...
+
 build: ## Re-build backend service if update code
 	docker compose build
 

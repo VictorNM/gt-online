@@ -48,6 +48,14 @@ func (s *Storage) GetProfile(ctx context.Context, email string) (*profile.Profil
 
 	ru := new(regularUser)
 	if err := s.db.Get(ru, `SELECT birthdate, sex, current_city, hometown FROM regular_users WHERE email=?`, email); err != nil {
+		if err == sql.ErrNoRows {
+			return &profile.Profile{
+				Email:     u.Email,
+				FirstName: u.FirstName,
+				LastName:  u.LastName,
+			}, nil
+		}
+
 		return nil, fmt.Errorf("query regular_users: %v", err)
 	}
 
@@ -67,15 +75,13 @@ func (s *Storage) GetProfile(ctx context.Context, email string) (*profile.Profil
 	}
 
 	p := &profile.Profile{
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		UpdateProfileRequest: profile.UpdateProfileRequest{
-			Email:       u.Email,
-			Sex:         ru.Sex.String,
-			Birthdate:   profile.Date{Time: ru.Birthdate.Time},
-			CurrentCity: ru.CurrentCity.String,
-			Hometown:    ru.Hometown.String,
-		},
+		Email:       u.Email,
+		FirstName:   u.FirstName,
+		LastName:    u.LastName,
+		Sex:         ru.Sex.String,
+		Birthdate:   ru.Birthdate.Time,
+		CurrentCity: ru.CurrentCity.String,
+		Hometown:    ru.Hometown.String,
 	}
 
 	for _, i := range interests {
@@ -185,7 +191,7 @@ func newRegularUser(req profile.UpdateProfileRequest) regularUser {
 	row.Email = req.Email
 
 	if !req.Birthdate.IsZero() {
-		row.Birthdate = sql.NullTime{Time: req.Birthdate.Time, Valid: true}
+		row.Birthdate = sql.NullTime{Time: req.Birthdate, Valid: true}
 	}
 
 	if req.Sex != "" {

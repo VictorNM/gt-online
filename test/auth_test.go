@@ -162,6 +162,38 @@ type (
 	}
 )
 
+func TestRegisterGetProfile(t *testing.T) {
+	var (
+		api      = makeAPI()
+		register register
+	)
+
+	// Step 1: register new user
+	{
+		// Given: User with new email and correct information
+		req := aValidRegisterRequest()
+
+		// When: Register using this information
+		res, err := api.Register(t, req)
+
+		// Then: Should not error
+		require.NoError(t, err)
+		register.req, register.res = req, res
+	}
+
+	// Use token from step 1 for next steps
+	api.WithToken(Token{AccessToken: register.res.AccessToken, TokenType: register.res.TokenType})
+
+	// Step 2: user get profile without EditProfile
+	{
+		res, err := api.GetProfile(t)
+		require.NoError(t, err)
+		require.Equal(t, register.req.Email, res.Email)
+		require.Equal(t, register.req.FirstName, res.FirstName)
+		require.Equal(t, register.req.LastName, res.LastName)
+	}
+}
+
 // TestRegisterEditProfile test feature new user register, then navigate to EditProfile and submit form.
 func TestRegisterEditProfile(t *testing.T) {
 	var (

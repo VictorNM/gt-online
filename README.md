@@ -118,6 +118,23 @@ All APIs will follow the below rules:
    }
    ```
 
+### Get Profile
+
+#### Request
+
+- Method: GET
+- Path: /users/profile
+- Authenticate: yes
+
+#### Response
+
+- 200: Success
+   ```json
+   {
+     
+   }
+   ```
+
 ### List Schools
 
 #### Request

@@ -2,7 +2,9 @@ package profile
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/victornm/gtonline/internal/gterr"
@@ -39,23 +41,8 @@ type (
 )
 
 type (
-	Date struct {
-		time.Time
-	}
-
 	GetProfileRequest struct {
 		Email string `json:"email"`
-	}
-
-	UpdateProfileRequest struct {
-		Email        string       `json:"email"`
-		Sex          string       `json:"sex"`
-		Birthdate    Date         `json:"birthdate"`
-		CurrentCity  string       `json:"current_city"`
-		Hometown     string       `json:"hometown"`
-		Interests    []string     `json:"interests"`
-		Education    []Attend     `json:"education"`
-		Professional []Employment `json:"professional"`
 	}
 
 	Attend struct {
@@ -69,35 +56,33 @@ type (
 	}
 
 	Profile struct {
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-		UpdateProfileRequest
+		Email        string       `json:"email"`
+		FirstName    string       `json:"first_name"`
+		LastName     string       `json:"last_name"`
+		Sex          string       `json:"sex,omitempty"`
+		Birthdate    time.Time    `json:"birthdate,omitempty"`
+		CurrentCity  string       `json:"current_city,omitempty"`
+		Hometown     string       `json:"hometown,omitempty"`
+		Interests    []string     `json:"interests,omitempty"`
+		Education    []Attend     `json:"education,omitempty"`
+		Professional []Employment `json:"professional,omitempty"`
 	}
 )
 
-func (d Date) MarshalJSON() ([]byte, error) {
-	if y := d.Year(); y < 0 || y >= 10000 {
-		// RFC 3339 is clear that years are 4 digits exactly.
-		// See golang.org/issue/4556#c15 for more discussion.
-		return nil, errors.New("Date.MarshalJSON: year outside of range [0,9999]")
+func (r Profile) MarshalJSON() ([]byte, error) {
+	type alias Profile
+
+	data := struct {
+		alias
+		Birthdate string `json:"birthdate,omitempty"`
+	}{
+		alias: alias(r),
+	}
+	if !r.Birthdate.IsZero() {
+		data.Birthdate = r.Birthdate.Format(dateLayout)
 	}
 
-	b := make([]byte, 0, len(dateLayout)+2)
-	b = append(b, '"')
-	b = d.AppendFormat(b, dateLayout)
-	b = append(b, '"')
-	return b, nil
-}
-
-func (d *Date) UnmarshalJSON(bytes []byte) error {
-	// Ignore null, like in the main JSON package.
-	if string(bytes) == "null" {
-		return nil
-	}
-	// Fractional seconds are handled implicitly by Parse.
-	var err error
-	d.Time, err = time.Parse(`"`+dateLayout+`"`, string(bytes))
-	return err
+	return json.Marshal(data)
 }
 
 func (s *Service) GetProfile(ctx context.Context, req GetProfileRequest) (*Profile, error) {
@@ -107,6 +92,49 @@ func (s *Service) GetProfile(ctx context.Context, req GetProfileRequest) (*Profi
 	}
 
 	return p, nil
+}
+
+type UpdateProfileRequest struct {
+	Email        string       `json:"email"`
+	Sex          string       `json:"sex"`
+	Birthdate    time.Time    `json:"birthdate"`
+	CurrentCity  string       `json:"current_city"`
+	Hometown     string       `json:"hometown"`
+	Interests    []string     `json:"interests"`
+	Education    []Attend     `json:"education"`
+	Professional []Employment `json:"professional"`
+}
+
+func (r *UpdateProfileRequest) UnmarshalJSON(bytes []byte) error {
+	if r == nil {
+		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(r)}
+	}
+
+	type alias UpdateProfileRequest
+
+	var data struct {
+		alias
+		Birthdate string `json:"birthdate,omitempty"`
+	}
+	if err := json.Unmarshal(bytes, &data); err != nil {
+		return err
+	}
+
+	if data.Birthdate == "" {
+		return nil
+	}
+
+	d, err := time.Parse(dateLayout, data.Birthdate)
+	if err != nil {
+		return &json.UnmarshalTypeError{
+			Value: data.Birthdate,
+			Type:  reflect.TypeOf(r.Birthdate),
+		}
+	}
+
+	data.alias.Birthdate = d
+	*r = UpdateProfileRequest(data.alias)
+	return nil
 }
 
 func (s *Service) UpdateProfile(ctx context.Context, req UpdateProfileRequest) (*Profile, error) {

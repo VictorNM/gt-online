@@ -58,11 +58,16 @@ func TestUpdateProfile(t *testing.T) {
 		}
 	})
 
+	// Get profile after create user
+	p, err := s.GetProfile(ctx, email)
+	require.NoError(t, err)
+	require.Equal(t, "foo", p.FirstName)
+
 	// Update profile 1st time:
 	req := profile.UpdateProfileRequest{
 		Email:        email,
 		Sex:          "M",
-		Birthdate:    profile.Date{Time: time.Now()},
+		Birthdate:    time.Now(),
 		CurrentCity:  "FooCity",
 		Hometown:     "BarCity",
 		Interests:    []string{"Books"},
@@ -71,9 +76,8 @@ func TestUpdateProfile(t *testing.T) {
 	}
 	err = s.UpdateProfile(ctx, req)
 	require.NoError(t, err)
-	p, err := s.GetProfile(ctx, email)
+	p, err = s.GetProfile(ctx, email)
 	require.NoError(t, err)
-	require.Equal(t, "foo", p.FirstName)
 	require.Equal(t, "M", p.Sex)
 	require.Equal(t, []string{"Books"}, p.Interests)
 	require.Equal(t, []profile.Attend{{School: "University of Oxford", YearGraduated: 2021}}, p.Education)
@@ -121,7 +125,7 @@ func TestUpdateProfileInvalidEmployer(t *testing.T) {
 	req := profile.UpdateProfileRequest{
 		Email:        email,
 		Sex:          "M",
-		Birthdate:    profile.Date{Time: time.Now()},
+		Birthdate:    time.Now(),
 		CurrentCity:  "FooCity",
 		Hometown:     "BarCity",
 		Professional: []profile.Employment{{Employer: "Tiki", JobTitle: "CEO"}},
