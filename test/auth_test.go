@@ -291,6 +291,153 @@ func TestRegisterEditProfile(t *testing.T) {
 	}
 }
 
+func TestValidateEditProfile(t *testing.T) {
+	api := makeRegisteredAPI(t, aValidRegisterRequest())
+
+	tests := map[string]struct {
+		alter func(req *UpdateProfileRequest)
+		valid bool
+	}{
+		"sex = 'M' should valid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Sex = "M"
+			},
+			valid: true,
+		},
+
+		"sex = 'F' should valid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Sex = "F"
+			},
+			valid: true,
+		},
+
+		"sex = '' should valid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Sex = ""
+			},
+			valid: true,
+		},
+
+		"sex != '', 'M', 'F' should invalid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Sex = "K"
+			},
+			valid: false,
+		},
+
+		"null interests should valid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Interests = nil
+			},
+			valid: true,
+		},
+
+		"empty slice interests should valid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Interests = []string{}
+			},
+			valid: true,
+		},
+
+		"multi non-empty interest value should valid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Interests = []string{"Soccer", "Books"}
+			},
+			valid: true,
+		},
+
+		"empty interest value should invalid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Interests = []string{""}
+			},
+			valid: false,
+		},
+
+		"duplicate interest value should invalid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Interests = []string{"Books", "Books"}
+			},
+			valid: false,
+		},
+
+		"empty year_graduate should valid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Education = []Attend{
+					{
+						School:        "University of Oxford",
+						YearGraduated: 0,
+					},
+				}
+			},
+			valid: true,
+		},
+
+		"negative year_graduate should invalid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Education = []Attend{
+					{
+						School:        "University of Oxford",
+						YearGraduated: -1,
+					},
+				}
+			},
+			valid: false,
+		},
+
+		"empty school should invalid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Education = []Attend{
+					{
+						School: "",
+					},
+				}
+			},
+			valid: false,
+		},
+
+		"empty employer should invalid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Professional = []Employment{
+					{
+						Employer: "",
+						JobTitle: "CTO",
+					},
+				}
+			},
+			valid: false,
+		},
+
+		"empty job_title should invalid": {
+			alter: func(req *UpdateProfileRequest) {
+				req.Professional = []Employment{
+					{
+						Employer: "Microsoft",
+						JobTitle: "",
+					},
+				}
+			},
+			valid: false,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			req := UpdateProfileRequest{}
+			test.alter(&req)
+			_, err := api.UpdateProfile(t, req)
+			if test.valid {
+				require.NoError(t, err)
+				return
+			}
+
+			require.Error(t, err, "should return an error")
+			e := mustAPIErr(t, err)
+			require.EqualValues(t, gterr.InvalidArgument, e.Code)
+		})
+	}
+}
+
 func aValidRegisterRequest() RegisterRequest {
 	req := RegisterRequest{
 		Email:     faker.Email(),
@@ -309,6 +456,17 @@ func mustRegister(t *testing.T, api *API) (email string, password string) {
 	return req.Email, req.Password
 }
 
+func makeRegisteredAPI(t *testing.T, req RegisterRequest) *API {
+	api := makeAPI()
+	res, err := api.Register(t, req)
+	require.NoError(t, err, "register failed")
+	api.WithToken(Token{
+		AccessToken: res.AccessToken,
+		TokenType:   res.TokenType,
+	})
+	return api
+}
+
 func makeAPI() *API {
 	return &API{addr: addr}
 }
@@ -320,7 +478,7 @@ func mustAPIErr(t *testing.T, err error) *APIError {
 	if errors.As(err, &e) {
 		return e
 	}
-	t.Fatalf("The provided error is not an %T", e)
+	t.Fatalf("The provided error is not an %T: %v", e, err)
 	return nil
 }
 

@@ -115,7 +115,7 @@ func (api *API) getProfile() gin.HandlerFunc {
 
 func (api *API) updateProfile() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var req profile.UpdateProfileRequest
+		req := new(profile.UpdateProfileRequest)
 		if err := api.bind(c, &req); err != nil {
 			api.replyErr(c, gterr.New(gterr.InvalidArgument, err.Error(), err))
 			return
@@ -128,7 +128,7 @@ func (api *API) updateProfile() gin.HandlerFunc {
 		}
 		req.Email = u.Email
 
-		res, err := api.Profile.UpdateProfile(c.Request.Context(), req)
+		res, err := api.Profile.UpdateProfile(c.Request.Context(), *req)
 		if err != nil {
 			api.replyErr(c, err)
 			return

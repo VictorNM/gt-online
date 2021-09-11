@@ -175,7 +175,7 @@ func (api *API) send(t *testing.T, method string, path string, in interface{}, o
 
 	w, err := http.DefaultClient.Do(r)
 	if err != nil {
-		t.Fatalf("Sendind HTTP request: %v", err)
+		t.Fatalf("Sending HTTP request: %v", err)
 	}
 	defer w.Body.Close()
 

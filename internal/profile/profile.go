@@ -96,7 +96,7 @@ func (s *Service) GetProfile(ctx context.Context, req GetProfileRequest) (*Profi
 }
 
 type UpdateProfileRequest struct {
-	Email        string       `json:"email"`
+	Email        string       `json:"-"`
 	Sex          string       `json:"sex" binding:"oneof='' 'M' 'F'"`
 	Birthdate    time.Time    `json:"birthdate"`
 	CurrentCity  string       `json:"current_city"`
@@ -106,17 +106,23 @@ type UpdateProfileRequest struct {
 	Professional []Employment `json:"professional"`
 }
 
-func (r *UpdateProfileRequest) UnmarshalJSON(bytes []byte) error {
+func (r *UpdateProfileRequest) UnmarshalJSON(bytes []byte) (err error) {
 	if r == nil {
 		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(r)}
 	}
 
 	type alias UpdateProfileRequest
-
 	var data struct {
 		alias
 		Birthdate string `json:"birthdate,omitempty"`
 	}
+
+	defer func() {
+		if err == nil {
+			*r = UpdateProfileRequest(data.alias)
+		}
+	}()
+
 	if err := json.Unmarshal(bytes, &data); err != nil {
 		return err
 	}
@@ -134,11 +140,45 @@ func (r *UpdateProfileRequest) UnmarshalJSON(bytes []byte) error {
 	}
 
 	data.alias.Birthdate = d
-	*r = UpdateProfileRequest(data.alias)
 	return nil
 }
 
 func (s *Service) UpdateProfile(ctx context.Context, req UpdateProfileRequest) (*Profile, error) {
+	// Validate interests
+	im := make(map[string]struct{})
+	for _, i := range req.Interests {
+		if i == "" {
+			return nil, gterr.New(gterr.InvalidArgument, "empty interest value")
+		}
+
+		im[i] = struct{}{}
+	}
+	if len(req.Interests) != len(im) {
+		return nil, gterr.New(gterr.InvalidArgument, "duplicate interest value")
+	}
+
+	// Validate education
+	for _, a := range req.Education {
+		if a.School == "" {
+			return nil, gterr.New(gterr.InvalidArgument, "empty school value")
+		}
+
+		if a.YearGraduated < 0 {
+			return nil, gterr.New(gterr.InvalidArgument, "negative year_graduated")
+		}
+	}
+
+	// Validate professional
+	for _, e := range req.Professional {
+		if e.Employer == "" {
+			return nil, gterr.New(gterr.InvalidArgument, "empty employer value")
+		}
+
+		if e.JobTitle == "" {
+			return nil, gterr.New(gterr.InvalidArgument, "empty job_title value")
+		}
+	}
+
 	err := s.storage.UpdateProfile(ctx, req)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, gterr.New(gterr.NotFound, "", err)
