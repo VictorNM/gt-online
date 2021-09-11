@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/victornm/gtonline/internal/gterr"
+	"github.com/victornm/gtonline/internal/storage"
 )
 
 type (
@@ -60,7 +61,7 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterR
 		return nil, gterr.New(gterr.AlreadyExists, fmt.Sprintf("Email %s already registered.", req.Email))
 	}
 
-	if err != nil && err != gterr.ErrNotFound {
+	if err != nil && err != storage.ErrNotFound {
 		return nil, gterr.New(gterr.Internal, "", err)
 	}
 
@@ -106,7 +107,7 @@ type (
 
 func (s *Service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, error) {
 	u, err := s.storage.FindUserByEmail(ctx, req.Email)
-	if errors.Is(err, gterr.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, gterr.New(gterr.Unauthenticated, "Email or password do not matched.", err)
 	}
 

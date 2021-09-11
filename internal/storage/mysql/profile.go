@@ -1,4 +1,4 @@
-package storage
+package mysql
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/victornm/gtonline/internal/gterr"
 	"github.com/victornm/gtonline/internal/profile"
+	"github.com/victornm/gtonline/internal/storage"
 )
 
 type (
@@ -111,7 +111,7 @@ func (s *Storage) UpdateProfile(ctx context.Context, req profile.UpdateProfileRe
 		return fmt.Errorf("check email exist on table 'users': %v", err)
 	}
 	if !exist {
-		return gterr.ErrNotFound
+		return storage.ErrNotFound
 	}
 
 	exist, err = s.isEmailExist(ctx, "regular_users", req.Email)
@@ -276,7 +276,7 @@ func replaceAttends(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfileR
 	}
 
 	if isErrForeignKeyConstraint(err) {
-		return gterr.ErrInvalidArgument
+		return storage.ErrInvalidArgument
 	}
 
 	return fmt.Errorf("insert attends: %v", err)
@@ -307,7 +307,7 @@ func replaceEmployments(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProf
 	}
 
 	if isErrForeignKeyConstraint(err) {
-		return gterr.ErrInvalidArgument
+		return storage.ErrInvalidArgument
 	}
 
 	return fmt.Errorf("insert attends: %v", err)

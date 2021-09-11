@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package storage_test
+package mysql_test
 
 import (
 	"context"
@@ -16,10 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/victornm/gtonline/internal/auth"
-	"github.com/victornm/gtonline/internal/gterr"
 	"github.com/victornm/gtonline/internal/profile"
 	"github.com/victornm/gtonline/internal/server"
 	"github.com/victornm/gtonline/internal/storage"
+	"github.com/victornm/gtonline/internal/storage/mysql"
 )
 
 func TestStorage_ListSchools(t *testing.T) {
@@ -133,15 +133,15 @@ func TestUpdateProfileInvalidEmployer(t *testing.T) {
 	err = s.UpdateProfile(ctx, req)
 	require.Error(t, err)
 
-	assert.True(t, errors.Is(err, gterr.ErrInvalidArgument), err)
+	assert.True(t, errors.Is(err, storage.ErrInvalidArgument), err)
 }
 
-func makeStorage(t *testing.T) *storage.Storage {
+func makeStorage(t *testing.T) *mysql.Storage {
 	once.Do(func() {
 		var err error
 		cfg := server.DefaultConfig().DB
 		cfg.Addr = "localhost:3306"
-		s, err = storage.New(cfg)
+		s, err = mysql.New(cfg)
 		require.NoError(t, err)
 		require.NoError(t, s.Ping())
 	})
@@ -150,7 +150,7 @@ func makeStorage(t *testing.T) *storage.Storage {
 
 var (
 	once sync.Once
-	s    *storage.Storage
+	s    *mysql.Storage
 )
 
 func TestMain(m *testing.M) {

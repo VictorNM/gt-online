@@ -1,4 +1,4 @@
-package gterr
+package storage
 
 import "errors"
 

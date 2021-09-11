@@ -14,7 +14,7 @@ import (
 	"github.com/victornm/gtonline/internal/api"
 	"github.com/victornm/gtonline/internal/auth"
 	"github.com/victornm/gtonline/internal/profile"
-	"github.com/victornm/gtonline/internal/storage"
+	"github.com/victornm/gtonline/internal/storage/mysql"
 )
 
 type (
@@ -22,7 +22,7 @@ type (
 		cfg Config
 
 		once    sync.Once
-		storage *storage.Storage
+		storage *mysql.Storage
 		e       *gin.Engine
 	}
 
@@ -77,7 +77,7 @@ func (s *Server) initStorage() error {
 	cfg := s.cfg.DB
 	log.Printf("DB config: addr=%s, user=%s, name=%s", cfg.Addr, cfg.User, cfg.Name)
 
-	stg, err := storage.New(cfg)
+	stg, err := mysql.New(cfg)
 	if err != nil {
 		return fmt.Errorf("open db: %v", err)
 	}

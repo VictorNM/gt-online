@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/victornm/gtonline/internal/gterr"
+	"github.com/victornm/gtonline/internal/storage"
 )
 
 const dateLayout = "02/01/2006"
@@ -87,7 +88,7 @@ func (r Profile) MarshalJSON() ([]byte, error) {
 
 func (s *Service) GetProfile(ctx context.Context, req GetProfileRequest) (*Profile, error) {
 	p, err := s.storage.GetProfile(ctx, req.Email)
-	if errors.Is(err, gterr.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, gterr.New(gterr.NotFound, "", err)
 	}
 
@@ -96,7 +97,7 @@ func (s *Service) GetProfile(ctx context.Context, req GetProfileRequest) (*Profi
 
 type UpdateProfileRequest struct {
 	Email        string       `json:"email"`
-	Sex          string       `json:"sex" binding:"oneof='' M' 'F'"`
+	Sex          string       `json:"sex" binding:"oneof='' 'M' 'F'"`
 	Birthdate    time.Time    `json:"birthdate"`
 	CurrentCity  string       `json:"current_city"`
 	Hometown     string       `json:"hometown"`
@@ -139,11 +140,11 @@ func (r *UpdateProfileRequest) UnmarshalJSON(bytes []byte) error {
 
 func (s *Service) UpdateProfile(ctx context.Context, req UpdateProfileRequest) (*Profile, error) {
 	err := s.storage.UpdateProfile(ctx, req)
-	if errors.Is(err, gterr.ErrNotFound) {
+	if errors.Is(err, storage.ErrNotFound) {
 		return nil, gterr.New(gterr.NotFound, "", err)
 	}
 
-	if errors.Is(err, gterr.ErrInvalidArgument) {
+	if errors.Is(err, storage.ErrInvalidArgument) {
 		return nil, gterr.New(gterr.InvalidArgument, "", err)
 	}
 

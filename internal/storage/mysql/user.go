@@ -1,4 +1,4 @@
-package storage
+package mysql
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/victornm/gtonline/internal/auth"
-	"github.com/victornm/gtonline/internal/gterr"
+	"github.com/victornm/gtonline/internal/storage"
 )
 
 type (
@@ -44,7 +44,7 @@ func (s *Storage) FindUserByEmail(ctx context.Context, email string) (*auth.User
 	u := new(auth.User)
 	err := s.db.GetContext(ctx, u, `SELECT email, password, first_name, last_name FROM users WHERE email=?;`, email)
 	if err == sql.ErrNoRows {
-		return nil, gterr.ErrNotFound
+		return nil, storage.ErrNotFound
 	}
 
 	if err != nil {
