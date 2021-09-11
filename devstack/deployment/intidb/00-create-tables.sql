@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `interests`
 (
     `email`    varchar(255) NOT NULL,
     `interest` varchar(50)  NOT NULL,
-    PRIMARY KEY (`email`),
+    PRIMARY KEY (`email`, `interest`),
     FOREIGN KEY (email) REFERENCES regular_users (email) ON DELETE CASCADE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8;
