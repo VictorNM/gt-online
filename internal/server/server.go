@@ -13,6 +13,7 @@ import (
 
 	"github.com/victornm/gtonline/internal/api"
 	"github.com/victornm/gtonline/internal/auth"
+	"github.com/victornm/gtonline/internal/friend"
 	"github.com/victornm/gtonline/internal/profile"
 	"github.com/victornm/gtonline/internal/storage/mysql"
 )
@@ -104,6 +105,7 @@ func (s *Server) initRouter() {
 	a := &api.API{
 		Auth:    auth.NewService(s.storage, []byte(s.cfg.Auth.Secret)),
 		Profile: profile.NewService(s.storage),
+		Friend:  friend.NewService(s.storage),
 	}
 	a.Route(s.e)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/victornm/gtonline/internal/auth"
+	"github.com/victornm/gtonline/internal/friend"
 	"github.com/victornm/gtonline/internal/gterr"
 	"github.com/victornm/gtonline/internal/profile"
 )
@@ -15,6 +16,7 @@ import (
 type API struct {
 	Auth    *auth.Service
 	Profile *profile.Service
+	Friend  *friend.Service
 }
 
 func (api *API) Route(e *gin.Engine) {
@@ -33,7 +35,7 @@ func (api *API) Route(e *gin.Engine) {
 func (api *API) register() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req auth.RegisterRequest
-		if err := api.bind(c, &req); err != nil {
+		if err := api.bindJSON(c, &req); err != nil {
 			api.replyErr(c, gterr.New(gterr.InvalidArgument, err.Error(), err))
 			return
 		}
@@ -50,7 +52,7 @@ func (api *API) register() gin.HandlerFunc {
 func (api *API) login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req auth.LoginRequest
-		if err := api.bind(c, &req); err != nil {
+		if err := api.bindJSON(c, &req); err != nil {
 			api.replyErr(c, gterr.New(gterr.InvalidArgument, err.Error(), err))
 			return
 		}
@@ -108,7 +110,24 @@ func (api *API) listEmployers() gin.HandlerFunc {
 
 func (api *API) listUsers() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		api.replyErr(c, gterr.New(gterr.Unimplemented, ""))
+		var req friend.SearchFriendsRequest
+		if err := api.bindQuery(c, &req); err != nil {
+			api.replyErr(c, gterr.New(gterr.InvalidArgument, err.Error(), err))
+			return
+		}
+
+		if req == (friend.SearchFriendsRequest{}) {
+			api.replyErr(c, gterr.New(gterr.InvalidArgument, "Must provide at least 1 params"))
+			return
+		}
+
+		res, err := api.Friend.SearchFriends(c.Request.Context(), req)
+		if err != nil {
+			api.replyErr(c, err)
+			return
+		}
+
+		api.reply(c, 200, res)
 	}
 }
 
@@ -135,7 +154,7 @@ func (api *API) getProfile() gin.HandlerFunc {
 func (api *API) updateProfile() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		req := new(profile.UpdateProfileRequest)
-		if err := api.bind(c, &req); err != nil {
+		if err := api.bindJSON(c, &req); err != nil {
 			api.replyErr(c, gterr.New(gterr.InvalidArgument, err.Error(), err))
 			return
 		}
@@ -164,8 +183,12 @@ func (api *API) userFromContext(c *gin.Context) (*auth.UserAuthDTO, bool) {
 	return u, ok
 }
 
-func (api *API) bind(c *gin.Context, req interface{}) error {
+func (api *API) bindJSON(c *gin.Context, req interface{}) error {
 	return c.ShouldBindJSON(req)
+}
+
+func (api *API) bindQuery(c *gin.Context, req interface{}) error {
+	return c.ShouldBindQuery(req)
 }
 
 func (api *API) reply(c *gin.Context, code int, res interface{}) {

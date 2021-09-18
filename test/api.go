@@ -196,7 +196,6 @@ func (api *API) send(t *testing.T, method string, path string, in interface{}, o
 	}
 
 	u := api.addr + path
-	t.Log(u)
 
 	r, err := http.NewRequest(method, u, reader)
 	if err != nil {

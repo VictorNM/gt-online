@@ -452,26 +452,31 @@ func TestAPI_ListUsers(t *testing.T) {
 			Email:     faker.Email(),
 			FirstName: "Tony",
 			LastName:  "Stark",
+			Hometown:  "New York",
 		},
 		{
 			Email:     faker.Email(),
 			FirstName: "Steve",
 			LastName:  "Rogers",
+			Hometown:  "New York",
 		},
 		{
 			Email:     faker.Email(),
 			FirstName: "Bruce",
 			LastName:  "Banner",
+			Hometown:  "Ohio",
 		},
 		{
 			Email:     faker.Email(),
 			FirstName: "Bruce",
 			LastName:  "Wayne",
+			Hometown:  "Gotham",
 		},
 		{
 			Email:     faker.Email(),
 			FirstName: "Clark",
 			LastName:  "Kent",
+			Hometown:  "Metropolis",
 		},
 	} {
 		pass := faker.Password()
@@ -491,10 +496,13 @@ func TestAPI_ListUsers(t *testing.T) {
 	// When: the current user search for friends
 	api := makeRegisteredAPI(t, aValidRegisterRequest())
 	res, err := api.ListUsers(t, ListUsersRequest{
-		Name: "Tony",
+		Email:    "",
+		Name:     "Tony",
+		Hometown: "Metropolis",
 	})
 	require.NoError(t, err)
-	assert.Len(t, res.Users, 1)
+	assert.NotEmpty(t, res.Users)
+	assert.Equal(t, res.Count, len(res.Users))
 }
 
 func aValidRegisterRequest() RegisterRequest {
