@@ -17,6 +17,19 @@ type API struct {
 	Profile *profile.Service
 }
 
+func (api *API) Route(e *gin.Engine) {
+	e.POST("/auth/register", api.register())
+	e.POST("/auth/login", api.login())
+
+	// Auth endpoints
+	e.Use(api.authMiddleware())
+	e.GET("/schools", api.listSchools())
+	e.GET("/employers", api.listEmployers())
+	e.GET("/users", api.listUsers())
+	e.GET("/users/profile", api.getProfile())
+	e.PUT("/users/profile", api.updateProfile())
+}
+
 func (api *API) register() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req auth.RegisterRequest
@@ -93,6 +106,12 @@ func (api *API) listEmployers() gin.HandlerFunc {
 	}
 }
 
+func (api *API) listUsers() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		api.replyErr(c, gterr.New(gterr.Unimplemented, ""))
+	}
+}
+
 func (api *API) getProfile() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		u, ok := api.userFromContext(c)
@@ -162,18 +181,6 @@ func (api *API) replyErr(c *gin.Context, err error) {
 func (api *API) abort(c *gin.Context, err error) {
 	api.replyErr(c, err)
 	c.Abort()
-}
-
-func (api *API) Route(e *gin.Engine) {
-	e.POST("/auth/register", api.register())
-	e.POST("/auth/login", api.login())
-
-	// Auth endpoints
-	e.Use(api.authMiddleware())
-	e.GET("/schools", api.listSchools())
-	e.GET("/employers", api.listEmployers())
-	e.GET("/users/profile", api.getProfile())
-	e.PUT("/users/profile", api.updateProfile())
 }
 
 func httpStatus(code gterr.ErrorCode) int {
