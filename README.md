@@ -118,6 +118,41 @@ All APIs will follow the below rules:
    }
    ```
 
+### List Users
+
+#### Request
+
+- Method: GET
+- Path: /users
+- Authenticate: yes
+- Query (must provide at least 1 of these queries):
+    ```
+    email:    string
+    name:     string
+    hometown: string
+    ```
+  Example:
+    ```
+    /users?hometown=Metropolis&name=Tony"
+    ```
+
+#### Response
+
+- 200: Success
+    ```json
+    {
+      "count": 1,
+      "users": [
+        {
+          "email": "tony@stark.com",
+          "first_name": "Tony",
+          "last_name": "Stark",
+          "hometown": "New York"
+        }
+      ]
+    }
+    ```
+
 ### Get Profile
 
 #### Request
