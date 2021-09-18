@@ -8,6 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/google/go-querystring v1.1.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/spf13/viper v1.8.1

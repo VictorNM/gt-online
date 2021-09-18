@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"testing"
+
+	"github.com/google/go-querystring/query"
 )
 
 const (
@@ -15,6 +17,7 @@ const (
 	pathSchools   = "/schools"
 	pathEmployers = "/employers"
 	pathProfile   = "/users/profile"
+	pathUsers     = "/users"
 )
 
 type (
@@ -91,6 +94,21 @@ type (
 		Education    []Attend     `json:"education"`
 		Professional []Employment `json:"professional"`
 	}
+
+	ListUsersRequest struct {
+		Email    string `url:"email,omitempty"`
+		Name     string `url:"name,omitempty"`
+		Hometown string `url:"hometown,omitempty"`
+	}
+
+	ListUsersResponse struct {
+		Count int `json:"count"`
+		Users []struct {
+			FirstName string `json:"first_name"`
+			LastName  string `json:"last_name"`
+			Hometown  string `json:"hometown"`
+		}
+	}
 )
 
 func (api *API) Register(t *testing.T, req RegisterRequest) (*RegisterResponse, error) {
@@ -141,6 +159,22 @@ func (api *API) UpdateProfile(t *testing.T, req UpdateProfileRequest) (*Profile,
 	return res, nil
 }
 
+func (api *API) ListUsers(t *testing.T, req ListUsersRequest) (*ListUsersResponse, error) {
+	res := new(ListUsersResponse)
+	if err := api.get(t, pathUsers, req, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (api *API) get(t *testing.T, path string, req interface{}, res interface{}) error {
+	v, _ := query.Values(req)
+	if q := v.Encode(); q != "" {
+		path = path + "?" + q
+	}
+	return api.send(t, http.MethodGet, path, nil, res)
+}
+
 type Token struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
@@ -162,6 +196,7 @@ func (api *API) send(t *testing.T, method string, path string, in interface{}, o
 	}
 
 	u := api.addr + path
+	t.Log(u)
 
 	r, err := http.NewRequest(method, u, reader)
 	if err != nil {

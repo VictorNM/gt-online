@@ -438,6 +438,65 @@ func TestValidateEditProfile(t *testing.T) {
 	}
 }
 
+func TestAPI_ListUsers(t *testing.T) {
+	type profile struct {
+		Email     string
+		FirstName string
+		LastName  string
+		Hometown  string
+	}
+
+	// Given: a list of users exist in the system
+	for _, req := range []profile{
+		{
+			Email:     faker.Email(),
+			FirstName: "Tony",
+			LastName:  "Stark",
+		},
+		{
+			Email:     faker.Email(),
+			FirstName: "Steve",
+			LastName:  "Rogers",
+		},
+		{
+			Email:     faker.Email(),
+			FirstName: "Bruce",
+			LastName:  "Banner",
+		},
+		{
+			Email:     faker.Email(),
+			FirstName: "Bruce",
+			LastName:  "Wayne",
+		},
+		{
+			Email:     faker.Email(),
+			FirstName: "Clark",
+			LastName:  "Kent",
+		},
+	} {
+		pass := faker.Password()
+		createUser(t,
+			RegisterRequest{
+				Email:                req.Email,
+				Password:             pass,
+				PasswordConfirmation: pass,
+				FirstName:            req.FirstName,
+				LastName:             req.LastName,
+			},
+			UpdateProfileRequest{
+				Hometown: req.Hometown,
+			})
+	}
+
+	// When: the current user search for friends
+	api := makeRegisteredAPI(t, aValidRegisterRequest())
+	res, err := api.ListUsers(t, ListUsersRequest{
+		Name: "Tony",
+	})
+	require.NoError(t, err)
+	assert.Len(t, res.Users, 1)
+}
+
 func aValidRegisterRequest() RegisterRequest {
 	req := RegisterRequest{
 		Email:     faker.Email(),
@@ -465,6 +524,12 @@ func makeRegisteredAPI(t *testing.T, req RegisterRequest) *API {
 		TokenType:   res.TokenType,
 	})
 	return api
+}
+
+func createUser(t *testing.T, reg RegisterRequest, up UpdateProfileRequest) {
+	api := makeRegisteredAPI(t, reg)
+	_, err := api.UpdateProfile(t, up)
+	require.NoError(t, err, "update profile failed")
 }
 
 func makeAPI() *API {
