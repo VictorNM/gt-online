@@ -86,20 +86,20 @@ func (s *Storage) SearchUsers(ctx context.Context, req friend.SearchFriendsReque
 			args      []interface{}
 		)
 
-		if req.Email != nil {
+		if req.Email != "" {
 			condition = append(condition, "email=?")
-			args = append(args, *req.Email)
+			args = append(args, req.Email)
 		}
 
-		if req.Name != nil {
+		if req.Name != "" {
 			condition = append(condition, "(first_name LIKE ? OR last_name LIKE ?)")
-			pattern := "%" + *req.Name + "%"
+			pattern := "%" + req.Name + "%"
 			args = append(args, pattern, pattern)
 		}
 
-		if req.Hometown != nil {
+		if req.Hometown != "" {
 			condition = append(condition, "hometown LIKE ?")
-			args = append(args, "%"+*req.Hometown+"%")
+			args = append(args, "%"+req.Hometown+"%")
 		}
 
 		return strings.Join(condition, " OR "), args

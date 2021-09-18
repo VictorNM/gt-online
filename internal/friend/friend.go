@@ -22,9 +22,9 @@ func NewService(s Storage) *Service {
 
 type (
 	SearchFriendsRequest struct {
-		Email    *string `form:"email"`
-		Name     *string `form:"name"`
-		Hometown *string `form:"hometown"`
+		Email    string `form:"email"`
+		Name     string `form:"name"`
+		Hometown string `form:"hometown"`
 	}
 
 	SearchFriendsResponse struct {
