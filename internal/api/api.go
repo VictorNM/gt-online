@@ -30,6 +30,10 @@ func (api *API) Route(e *gin.Engine) {
 	e.GET("/users", api.listUsers())
 	e.GET("/users/profile", api.getProfile())
 	e.PUT("/users/profile", api.updateProfile())
+	e.GET("/friends", api.listFriends())
+	e.GET("/friends/requests", api.listFriendRequests())
+	e.PUT("/friends/requests/:friend_email", api.createFriendRequest())
+	e.DELETE("/friends/requests/:friend_email", api.deleteFriendRequest())
 }
 
 func (api *API) register() gin.HandlerFunc {
@@ -173,6 +177,61 @@ func (api *API) updateProfile() gin.HandlerFunc {
 		}
 
 		api.reply(c, 200, res)
+	}
+}
+
+func (api *API) listFriends() gin.HandlerFunc {
+	return api.unimplemented()
+}
+
+func (api *API) listFriendRequests() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		u, ok := api.userFromContext(c)
+		if !ok {
+			api.replyErr(c, gterr.New(gterr.Internal, "", fmt.Errorf("context not contain user")))
+			return
+		}
+		res, err := api.Friend.ListFriendRequests(c.Request.Context(), u.Email)
+		if err != nil {
+			api.replyErr(c, err)
+			return
+		}
+
+		api.reply(c, 200, res)
+	}
+}
+
+func (api *API) createFriendRequest() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req friend.CreateFriendRequest
+		if err := api.bindJSON(c, &req); err != nil {
+			api.replyErr(c, gterr.New(gterr.InvalidArgument, err.Error(), err))
+			return
+		}
+		u, ok := api.userFromContext(c)
+		if !ok {
+			api.replyErr(c, gterr.New(gterr.Internal, "", fmt.Errorf("context not contain user")))
+			return
+		}
+
+		req.Email, req.FriendEmail = u.Email, c.Param("friend_email")
+
+		if err := api.Friend.CreateFriend(c.Request.Context(), req); err != nil {
+			api.replyErr(c, err)
+			return
+		}
+
+		api.reply(c, 200, nil)
+	}
+}
+
+func (api *API) deleteFriendRequest() gin.HandlerFunc {
+	return api.unimplemented()
+}
+
+func (api *API) unimplemented() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		api.replyErr(c, gterr.New(gterr.Unimplemented, ""))
 	}
 }
 

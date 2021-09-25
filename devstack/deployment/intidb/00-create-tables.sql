@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS `friendships`
 (
     `email`          varchar(255) NOT NULL,
     `friend_email`   varchar(255) NOT NULL,
-    `relationship`   varchar(50)  NOT NULL,
-    `date_connected` datetime     NOT NULL,
+    `relationship`   varchar(50)  NULL,
+    `date_connected` datetime     NULL,
     PRIMARY KEY (`email`, `friend_email`),
     FOREIGN KEY (email) REFERENCES regular_users (email) ON DELETE CASCADE,
     FOREIGN KEY (friend_email) REFERENCES regular_users (email) ON DELETE CASCADE

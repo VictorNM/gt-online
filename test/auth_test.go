@@ -56,7 +56,7 @@ func TestRegister_Validation(t *testing.T) {
 				_, err := api.Register(t, req)
 				e := mustAPIErr(t, err)
 				assert.Equal(t, http.StatusBadRequest, e.HTTPStatus)
-				assert.Equal(t, gterr.InvalidArgument, e.Code)
+				assert.Equal(t, gterr.InvalidArgument, gterr.ErrorCode(e.Code))
 			})
 		}
 	})
@@ -72,7 +72,7 @@ func TestRegister_Validation(t *testing.T) {
 		_, err = api.Register(t, req)
 		e := mustAPIErr(t, err)
 		assert.Equal(t, http.StatusConflict, e.HTTPStatus)
-		assert.Equal(t, gterr.AlreadyExists, e.Code)
+		assert.Equal(t, gterr.AlreadyExists, gterr.ErrorCode(e.Code))
 	})
 }
 
@@ -110,7 +110,7 @@ func TestLogin_Validation(t *testing.T) {
 			_, err := api.Login(t, req)
 			e := mustAPIErr(t, err)
 			assert.Equal(t, http.StatusBadRequest, e.HTTPStatus)
-			assert.Equal(t, gterr.InvalidArgument, e.Code)
+			assert.Equal(t, gterr.InvalidArgument, gterr.ErrorCode(e.Code))
 		})
 	}
 }
@@ -139,7 +139,7 @@ func TestAuthenticate(t *testing.T) {
 	_, err := api.ListSchools(t)
 	e := mustAPIErr(t, err)
 	assert.Equal(t, http.StatusUnauthorized, e.HTTPStatus)
-	assert.Equal(t, gterr.Unauthenticated, e.Code)
+	assert.Equal(t, gterr.Unauthenticated, gterr.ErrorCode(e.Code))
 }
 
 type (
@@ -433,12 +433,12 @@ func TestValidateEditProfile(t *testing.T) {
 
 			require.Error(t, err, "should return an error")
 			e := mustAPIErr(t, err)
-			require.EqualValues(t, gterr.InvalidArgument, e.Code)
+			require.EqualValues(t, gterr.InvalidArgument, gterr.ErrorCode(e.Code))
 		})
 	}
 }
 
-func TestAPI_ListUsers(t *testing.T) {
+func TestAPI_SearchUsers(t *testing.T) {
 	type profile struct {
 		Email     string
 		FirstName string
@@ -503,6 +503,28 @@ func TestAPI_ListUsers(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, res.Users)
 	assert.Equal(t, res.Count, len(res.Users))
+}
+
+func TestAPI_Friendship(t *testing.T) {
+	user, friend := aValidRegisterRequest(), aValidRegisterRequest()
+	userAPI, _ := makeRegisteredAPI(t, user), makeRegisteredAPI(t, friend)
+
+	// Step 1: user send a friend request
+	{
+		err := userAPI.CreateFriendRequest(t, CreateFriendRequest{
+			FriendEmail:  friend.Email,
+			Relationship: "Co-worker",
+		})
+		require.NoError(t, err)
+
+		res, err := userAPI.ListFriendRequests(t)
+		require.NoError(t, err)
+		want := []FriendRequest{{
+			Email:        friend.Email,
+			Relationship: "Co-worker",
+		}}
+		assert.Equal(t, want, res.RequestTo)
+	}
 }
 
 func aValidRegisterRequest() RegisterRequest {

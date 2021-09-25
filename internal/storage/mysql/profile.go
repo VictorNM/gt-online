@@ -106,66 +106,10 @@ func (s *Storage) GetProfile(ctx context.Context, email string) (*profile.Profil
 }
 
 func (s *Storage) UpdateProfile(ctx context.Context, req profile.UpdateProfileRequest) (err error) {
-	exist, err := s.isEmailExist(ctx, "users", req.Email)
-	if err != nil {
-		return fmt.Errorf("check email exist on table 'users': %v", err)
-	}
-	if !exist {
-		return storage.ErrNotFound
-	}
-
-	exist, err = s.isEmailExist(ctx, "regular_users", req.Email)
-	if err != nil {
-		return fmt.Errorf("check email exist on table 'regular_users': %v", err)
-	}
-
-	tx, err := s.db.Beginx()
-	if err != nil {
-		return fmt.Errorf("begin transaction: %v", err)
-	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-			return
-		}
-
-		err = tx.Commit()
-	}()
-
-	if exist {
-		if err := updateProfile(ctx, tx, req); err != nil {
-			return fmt.Errorf("update profile: %w", err)
-		}
-		return nil
-	}
-
-	if err := insertProfile(ctx, tx, req); err != nil {
-		return fmt.Errorf("insert profile: %w", err)
-	}
-	return nil
+	return updateProfile(ctx, s.db, req)
 }
 
-func insertProfile(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfileRequest) error {
-	if err := insertRegularUser(ctx, tx, req); err != nil {
-		return fmt.Errorf("insert regular_users: %v", err)
-	}
-
-	if err := replaceInterests(ctx, tx, req); err != nil {
-		return fmt.Errorf("replace interests: %v", err)
-	}
-
-	if err := replaceAttends(ctx, tx, req); err != nil {
-		return fmt.Errorf("replace attends: %w", err)
-	}
-
-	if err := replaceEmployments(ctx, tx, req); err != nil {
-		return fmt.Errorf("replace employments: %w", err)
-	}
-
-	return nil
-}
-
-func updateProfile(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfileRequest) error {
+func updateProfile(ctx context.Context, tx *sqlx.DB, req profile.UpdateProfileRequest) error {
 	if err := updateRegularUser(ctx, tx, req); err != nil {
 		return fmt.Errorf("update regular_users: %v", err)
 	}
@@ -209,21 +153,14 @@ func newRegularUser(req profile.UpdateProfileRequest) regularUser {
 	return row
 }
 
-func insertRegularUser(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfileRequest) error {
-	row := newRegularUser(req)
-	stmt := `INSERT INTO regular_users (email, birthdate, sex, current_city, hometown) VALUES (:email, :birthdate, :sex, :current_city, :hometown);`
-	_, err := tx.NamedExecContext(ctx, stmt, row)
-	return err
-}
-
-func updateRegularUser(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfileRequest) error {
+func updateRegularUser(ctx context.Context, tx *sqlx.DB, req profile.UpdateProfileRequest) error {
 	row := newRegularUser(req)
 	stmt := `UPDATE regular_users SET birthdate=:birthdate, sex=:sex, current_city=:current_city, hometown=:hometown WHERE email=:email;`
 	_, err := tx.NamedExecContext(ctx, stmt, row)
 	return err
 }
 
-func replaceInterests(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfileRequest) error {
+func replaceInterests(ctx context.Context, tx *sqlx.DB, req profile.UpdateProfileRequest) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM interests WHERE email=?`, req.Email); err != nil {
 		return fmt.Errorf("delete interests: %v", err)
 	}
@@ -249,7 +186,7 @@ func replaceInterests(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfil
 	return nil
 }
 
-func replaceAttends(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfileRequest) error {
+func replaceAttends(ctx context.Context, tx *sqlx.DB, req profile.UpdateProfileRequest) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM attends WHERE email=?`, req.Email); err != nil {
 		return fmt.Errorf("delete attends: %v", err)
 	}
@@ -282,7 +219,7 @@ func replaceAttends(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfileR
 	return fmt.Errorf("insert attends: %v", err)
 }
 
-func replaceEmployments(ctx context.Context, tx *sqlx.Tx, req profile.UpdateProfileRequest) error {
+func replaceEmployments(ctx context.Context, tx *sqlx.DB, req profile.UpdateProfileRequest) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM employments WHERE email=?`, req.Email); err != nil {
 		return fmt.Errorf("delete employments: %v", err)
 	}
@@ -365,6 +302,18 @@ func isErrForeignKeyConstraint(err error) bool {
 
 	if e := new(mysql.MySQLError); errors.As(err, &e) {
 		return e.Number == 1452
+	}
+
+	return false
+}
+
+func isDuplicate(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if e := new(mysql.MySQLError); errors.As(err, &e) {
+		return e.Number == 1062
 	}
 
 	return false

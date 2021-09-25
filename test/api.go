@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"testing"
 
@@ -104,10 +105,26 @@ type (
 	ListUsersResponse struct {
 		Count int `json:"count"`
 		Users []struct {
+			Email     string `json:"email"`
 			FirstName string `json:"first_name"`
 			LastName  string `json:"last_name"`
 			Hometown  string `json:"hometown"`
 		}
+	}
+
+	CreateFriendRequest struct {
+		FriendEmail  string `json:"-"`
+		Relationship string `json:"relationship"`
+	}
+
+	ListFriendRequestsResponse struct {
+		RequestTo   []FriendRequest `json:"request_to"`
+		RequestFrom []FriendRequest `json:"request_from"`
+	}
+
+	FriendRequest struct {
+		Email        string `json:"email"`
+		Relationship string `json:"relationship"`
 	}
 )
 
@@ -167,6 +184,19 @@ func (api *API) ListUsers(t *testing.T, req ListUsersRequest) (*ListUsersRespons
 	return res, nil
 }
 
+func (api *API) CreateFriendRequest(t *testing.T, req CreateFriendRequest) error {
+	path := fmt.Sprintf("/friends/requests/%s", req.FriendEmail)
+	return api.send(t, http.MethodPut, path, req, nil)
+}
+
+func (api *API) ListFriendRequests(t *testing.T) (*ListFriendRequestsResponse, error) {
+	res := new(ListFriendRequestsResponse)
+	if err := api.get(t, "/friends/requests", nil, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (api *API) get(t *testing.T, path string, req interface{}, res interface{}) error {
 	v, _ := query.Values(req)
 	if q := v.Encode(); q != "" {
@@ -214,6 +244,7 @@ func (api *API) send(t *testing.T, method string, path string, in interface{}, o
 	defer w.Body.Close()
 
 	b, _ := io.ReadAll(w.Body)
+	log.Println(string(b))
 
 	if w.StatusCode < 200 || w.StatusCode > 299 {
 		e := new(APIError)
@@ -222,6 +253,10 @@ func (api *API) send(t *testing.T, method string, path string, in interface{}, o
 		}
 		e.HTTPStatus = w.StatusCode
 		return e
+	}
+
+	if out == nil {
+		return nil
 	}
 
 	if err := json.Unmarshal(b, out); err != nil {

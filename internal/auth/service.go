@@ -22,7 +22,7 @@ type (
 
 	Storage interface {
 		FindUserByEmail(ctx context.Context, email string) (*User, error)
-		CreateUser(ctx context.Context, u User) error
+		CreateRegularUser(ctx context.Context, u User) error
 	}
 
 	User struct {
@@ -76,7 +76,7 @@ func (s *Service) Register(ctx context.Context, req RegisterRequest) (*RegisterR
 		FirstName:      req.FirstName,
 		LastName:       req.LastName,
 	}
-	err = s.storage.CreateUser(ctx, u)
+	err = s.storage.CreateRegularUser(ctx, u)
 
 	if err != nil {
 		return nil, gterr.New(gterr.Internal, "", err)

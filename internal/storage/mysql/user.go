@@ -56,20 +56,33 @@ func (s *Storage) FindUserByEmail(ctx context.Context, email string) (*auth.User
 	return u, nil
 }
 
-func (s *Storage) CreateUser(ctx context.Context, u auth.User) error {
-	stmt, err := s.db.PrepareNamed(
-		`INSERT INTO users (email, password, first_name, last_name) VALUES(:email, :password, :first_name, :last_name);`,
-	)
+func (s *Storage) CreateRegularUser(ctx context.Context, u auth.User) (err error) {
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %v", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+			return
+		}
+		err = tx.Commit()
+	}()
 
+	stmt := `INSERT INTO users (email, password, first_name, last_name) VALUES(:email, :password, :first_name, :last_name);`
+	_, err = tx.NamedExecContext(ctx, stmt, u)
+	if isDuplicate(err) {
+		return fmt.Errorf("%w: %v", storage.ErrAlreadyExist, err)
+	}
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.ExecContext(ctx, u)
-	if err != nil {
-		return err
+	_, err = tx.ExecContext(ctx, `INSERT INTO regular_users (email) VALUES(?)`, u.Email)
+	if isDuplicate(err) {
+		return fmt.Errorf("%w: %v", storage.ErrAlreadyExist, err)
 	}
-	return nil
+	return err
 }
 
 func (s *Storage) SearchUsers(ctx context.Context, req friend.SearchFriendsRequest) (*friend.SearchFriendsResponse, error) {

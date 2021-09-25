@@ -45,7 +45,7 @@ func TestUpdateProfile(t *testing.T) {
 	email := "foo@bar.com"
 
 	// Create new user
-	err := s.CreateUser(ctx, auth.User{
+	err := s.CreateRegularUser(ctx, auth.User{
 		Email:          email,
 		HashedPassword: "123",
 		FirstName:      "foo",
@@ -108,7 +108,7 @@ func TestUpdateProfileInvalidEmployer(t *testing.T) {
 	email := "foo@bar.com"
 
 	// Create new user
-	err := s.CreateUser(ctx, auth.User{
+	err := s.CreateRegularUser(ctx, auth.User{
 		Email:          email,
 		HashedPassword: "123",
 		FirstName:      "foo",
