@@ -346,12 +346,14 @@ All APIs will follow the below rules:
 
 - Method: PUT
 - Path: /friends/requests/:friend_email
-  - Param:
   ```
   friend_email      string,required
   ```
-    
 - Authenticate: yes
+- Body:
+  ```
+  relationship     string
+  ```
 
 #### Response
 
