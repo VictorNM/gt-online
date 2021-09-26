@@ -311,3 +311,48 @@ All APIs will follow the below rules:
      ]
    }
    ```
+
+### List Friend Requests
+
+#### Request
+
+- Method: GET
+- Path: /friends/requests
+- Authenticate: yes
+
+#### Response
+
+- 200: Success
+   ```json
+   {
+     "request_from": [
+        {
+          "email": "tony@stark.com",
+          "relationship": "Teammate"
+        }
+     ],
+     "request_to": [
+        {
+          "email": "steve.rogers@avengers.com",
+          "relationship": "Teammate"
+        }
+     ]
+   }
+   ```
+  
+### Create Friend Request
+
+#### Request
+
+- Method: PUT
+- Path: /friends/requests/:friend_email
+  - Param:
+  ```
+  friend_email      string,required
+  ```
+    
+- Authenticate: yes
+
+#### Response
+
+- 200: Success
