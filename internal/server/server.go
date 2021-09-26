@@ -98,9 +98,6 @@ func (s *Server) initRouter() {
 	corsConfig.AllowAllOrigins = true
 	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
 	s.e.Use(cors.New(corsConfig))
-	s.e.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, map[string]string{"ping": "pong"})
-	})
 
 	a := &api.API{
 		Auth:    auth.NewService(s.storage, []byte(s.cfg.Auth.Secret)),

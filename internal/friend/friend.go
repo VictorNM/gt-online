@@ -72,6 +72,11 @@ type (
 		FriendEmail  string
 		Relationship string `json:"relationship"`
 	}
+
+	AcceptFriendRequest struct {
+		Email        string
+		EmailRequest string
+	}
 )
 
 func (s *Service) SearchFriends(ctx context.Context, req SearchFriendsRequest) (*SearchFriendsResponse, error) {
@@ -146,6 +151,30 @@ func (s *Service) insertFriendship(ctx context.Context, req CreateFriendRequest)
 
 	if err != nil {
 		return gterr.New(gterr.Internal, "", fmt.Errorf("insert friendship: %v", err))
+	}
+
+	return nil
+}
+
+func (s *Service) AcceptFriendRequest(ctx context.Context, req AcceptFriendRequest) error {
+	if strings.EqualFold(req.Email, req.EmailRequest) {
+		return gterr.New(gterr.InvalidArgument, "2 email must be different")
+	}
+
+	f, err := s.storage.GetFriendship(ctx, req.EmailRequest, req.Email)
+	if storage.IsErrNotFound(err) {
+		msg := fmt.Sprintf("the friend request from %s to %s is not exist", req.EmailRequest, req.Email)
+		return gterr.New(gterr.FailedPrecondition, msg, err)
+	}
+
+	if !f.DateConnected.IsZero() {
+		msg := fmt.Sprintf("%s already accept the request from %s", req.Email, req.EmailRequest)
+		return gterr.New(gterr.AlreadyExists, msg)
+	}
+
+	f.DateConnected = time.Now()
+	if err := s.storage.UpdateFriendship(ctx, f); err != nil {
+		return gterr.New(gterr.Internal, "", err)
 	}
 
 	return nil

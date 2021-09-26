@@ -31,9 +31,14 @@ func (api *API) Route(e *gin.Engine) {
 	e.GET("/users/profile", api.getProfile())
 	e.PUT("/users/profile", api.updateProfile())
 	e.GET("/friends", api.listFriends())
+	e.PUT("/friends/:friend_email", api.acceptFriendRequest())
 	e.GET("/friends/requests", api.listFriendRequests())
 	e.PUT("/friends/requests/:friend_email", api.createFriendRequest())
 	e.DELETE("/friends/requests/:friend_email", api.deleteFriendRequest())
+
+	e.NoRoute(func(c *gin.Context) {
+		api.replyErr(c, gterr.New(gterr.NotFound, "not found path: "+c.Request.URL.Path))
+	})
 }
 
 func (api *API) register() gin.HandlerFunc {
@@ -182,6 +187,26 @@ func (api *API) updateProfile() gin.HandlerFunc {
 
 func (api *API) listFriends() gin.HandlerFunc {
 	return api.unimplemented()
+}
+
+func (api *API) acceptFriendRequest() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		u, ok := api.userFromContext(c)
+		if !ok {
+			api.replyErr(c, gterr.New(gterr.Internal, "", fmt.Errorf("context not contain user")))
+			return
+		}
+
+		if err := api.Friend.AcceptFriendRequest(c.Request.Context(), friend.AcceptFriendRequest{
+			Email:        u.Email,
+			EmailRequest: c.Param("friend_email"),
+		}); err != nil {
+			api.replyErr(c, err)
+			return
+		}
+
+		api.reply(c, 200, nil)
+	}
 }
 
 func (api *API) listFriendRequests() gin.HandlerFunc {

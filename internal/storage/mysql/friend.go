@@ -20,10 +20,10 @@ func (s *Storage) ListPendingFriendships(ctx context.Context, email string) ([]*
 	stmt := `
 SELECT email, friend_email, relationship
 FROM friendships
-WHERE email=? AND date_connected IS NULL;
+WHERE (email=? OR friend_email=?) AND date_connected IS NULL;
 `
 	var rows []friendship
-	err := s.db.SelectContext(ctx, &rows, stmt, email)
+	err := s.db.SelectContext(ctx, &rows, stmt, email, email)
 	if err != nil {
 		return nil, err
 	}

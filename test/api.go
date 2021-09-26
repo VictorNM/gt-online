@@ -117,6 +117,10 @@ type (
 		Relationship string `json:"relationship"`
 	}
 
+	AcceptFriendRequest struct {
+		FriendEmail string `json:"-"`
+	}
+
 	ListFriendRequestsResponse struct {
 		RequestTo   []FriendRequest `json:"request_to"`
 		RequestFrom []FriendRequest `json:"request_from"`
@@ -186,6 +190,11 @@ func (api *API) ListUsers(t *testing.T, req ListUsersRequest) (*ListUsersRespons
 
 func (api *API) CreateFriendRequest(t *testing.T, req CreateFriendRequest) error {
 	path := fmt.Sprintf("/friends/requests/%s", req.FriendEmail)
+	return api.send(t, http.MethodPut, path, req, nil)
+}
+
+func (api *API) AcceptFriendRequest(t *testing.T, req AcceptFriendRequest) error {
+	path := fmt.Sprintf("/friends/%s", req.FriendEmail)
 	return api.send(t, http.MethodPut, path, req, nil)
 }
 

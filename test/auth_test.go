@@ -506,24 +506,61 @@ func TestAPI_SearchUsers(t *testing.T) {
 }
 
 func TestAPI_Friendship(t *testing.T) {
+	// Given: 2 users exist in the system
 	user, friend := aValidRegisterRequest(), aValidRegisterRequest()
-	userAPI, _ := makeRegisteredAPI(t, user), makeRegisteredAPI(t, friend)
+	userAPI, friendAPI := makeRegisteredAPI(t, user), makeRegisteredAPI(t, friend)
 
 	// Step 1: user send a friend request
 	{
+		// When: user send a friend request
 		err := userAPI.CreateFriendRequest(t, CreateFriendRequest{
 			FriendEmail:  friend.Email,
 			Relationship: "Co-worker",
 		})
+
+		// Then: it should be success
 		require.NoError(t, err)
 
+		// And when: user list pending requests
 		res, err := userAPI.ListFriendRequests(t)
+
+		// Then: the new request should be in the response
 		require.NoError(t, err)
-		want := []FriendRequest{{
+		require.Contains(t, res.RequestTo, FriendRequest{
 			Email:        friend.Email,
 			Relationship: "Co-worker",
-		}}
-		assert.Equal(t, want, res.RequestTo)
+		})
+	}
+
+	// Step 2: friend see pending request and accept it
+	{
+		// When: friend list pending requests
+		res, err := friendAPI.ListFriendRequests(t)
+
+		// Then: should see request from user
+		require.NoError(t, err)
+		require.Contains(t, res.RequestFrom, FriendRequest{
+			Email:        user.Email,
+			Relationship: "Co-worker",
+		})
+
+		// When: friend accept the request
+		err = friendAPI.AcceptFriendRequest(t, AcceptFriendRequest{
+			FriendEmail: res.RequestFrom[0].Email,
+		})
+
+		// Then: should be success
+		require.NoError(t, err)
+
+		// When: friend list pending requests again
+		res, err = friendAPI.ListFriendRequests(t)
+
+		// Then: should not see request from user
+		require.NoError(t, err)
+		require.NotContains(t, res.RequestFrom, FriendRequest{
+			Email:        user.Email,
+			Relationship: "Co-worker",
+		})
 	}
 }
 
