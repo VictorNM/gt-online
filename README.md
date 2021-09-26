@@ -358,3 +358,42 @@ All APIs will follow the below rules:
 #### Response
 
 - 200: Success
+
+### Accept Friend Request
+
+#### Request
+
+- Method: PUT
+- Path: /friends/:friend_email
+  ```
+  friend_email      string,required
+  ```
+- Authenticate: yes
+
+#### Response
+
+- 200: Success
+
+### List Friends
+
+#### Request
+
+- Method: GET
+- Path: /friends
+- Authenticate: yes
+
+#### Response
+
+- 200: Success
+   ```json
+   {
+     "friends": [
+        {
+          "friend_email": "tony@stark.com",
+          "relationship": "Teammate",
+          "date_connected": "November 23, 2020"
+        }
+     ]
+   }
+   ```
+  
