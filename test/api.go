@@ -130,6 +130,16 @@ type (
 		Email        string `json:"email"`
 		Relationship string `json:"relationship"`
 	}
+
+	ListFriendsResponse struct {
+		Friends []Friendship
+	}
+
+	Friendship struct {
+		FriendEmail   string `json:"friend_email"`
+		Relationship  string `json:"relationship"`
+		DateConnected string `json:"date_connected"`
+	}
 )
 
 func (api *API) Register(t *testing.T, req RegisterRequest) (*RegisterResponse, error) {
@@ -201,6 +211,14 @@ func (api *API) AcceptFriendRequest(t *testing.T, req AcceptFriendRequest) error
 func (api *API) ListFriendRequests(t *testing.T) (*ListFriendRequestsResponse, error) {
 	res := new(ListFriendRequestsResponse)
 	if err := api.get(t, "/friends/requests", nil, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (api *API) ListFriends(t *testing.T) (*ListFriendsResponse, error) {
+	res := new(ListFriendsResponse)
+	if err := api.get(t, "/friends", nil, res); err != nil {
 		return nil, err
 	}
 	return res, nil

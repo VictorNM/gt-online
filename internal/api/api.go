@@ -186,7 +186,19 @@ func (api *API) updateProfile() gin.HandlerFunc {
 }
 
 func (api *API) listFriends() gin.HandlerFunc {
-	return api.unimplemented()
+	return func(c *gin.Context) {
+		u, ok := api.userFromContext(c)
+		if !ok {
+			api.replyErr(c, gterr.New(gterr.Internal, "", fmt.Errorf("context not contain user")))
+			return
+		}
+		res, err := api.Friend.ListFriend(c.Request.Context(), u.Email)
+		if err != nil {
+			api.replyErr(c, err)
+			return
+		}
+		api.reply(c, 200, res)
+	}
 }
 
 func (api *API) acceptFriendRequest() gin.HandlerFunc {

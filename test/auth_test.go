@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/gin-gonic/gin"
@@ -521,7 +522,7 @@ func TestAPI_Friendship(t *testing.T) {
 		// Then: it should be success
 		require.NoError(t, err)
 
-		// And when: user list pending requests
+		// When: user list pending requests
 		res, err := userAPI.ListFriendRequests(t)
 
 		// Then: the new request should be in the response
@@ -560,6 +561,29 @@ func TestAPI_Friendship(t *testing.T) {
 		require.NotContains(t, res.RequestFrom, FriendRequest{
 			Email:        user.Email,
 			Relationship: "Co-worker",
+		})
+	}
+
+	// Step 3: user see friend in the friend list
+	{
+		// When: user list pending requests again
+		res, err := userAPI.ListFriendRequests(t)
+
+		// Then: the accepted request should be not in the list
+		require.NoError(t, err)
+		require.NotContains(t, res.RequestTo, FriendRequest{
+			Email: friend.Email,
+		})
+
+		// When: user list friends
+		friends, err := userAPI.ListFriends(t)
+
+		// Then: should see the new friend in the list
+		require.NoError(t, err)
+		require.Contains(t, friends.Friends, Friendship{
+			FriendEmail:   friend.Email,
+			Relationship:  "Co-worker",
+			DateConnected: time.Now().Format("January 02, 2006"),
 		})
 	}
 }

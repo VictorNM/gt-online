@@ -2,6 +2,7 @@ package friend
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -18,17 +19,11 @@ type (
 
 	Storage interface {
 		SearchUsers(ctx context.Context, req SearchFriendsRequest) (*SearchFriendsResponse, error)
+		ListFriends(ctx context.Context, email string) ([]*Friendship, error)
 		ListPendingFriendships(ctx context.Context, email string) ([]*Friendship, error)
 		GetFriendship(ctx context.Context, email, friendEmail string) (*Friendship, error)
 		InsertFriendship(ctx context.Context, f *Friendship) error
 		UpdateFriendship(ctx context.Context, f *Friendship) error
-	}
-
-	Friendship struct {
-		Email         string
-		FriendEmail   string
-		Relationship  string
-		DateConnected time.Time
 	}
 )
 
@@ -37,6 +32,13 @@ func NewService(s Storage) *Service {
 }
 
 type (
+	Friendship struct {
+		Email         string    `json:"-"`
+		FriendEmail   string    `json:"friend_email"`
+		Relationship  string    `json:"relationship"`
+		DateConnected time.Time `json:"date_connected"`
+	}
+
 	SearchFriendsRequest struct {
 		Email    string `form:"email"`
 		Name     string `form:"name"`
@@ -53,6 +55,10 @@ type (
 		FirstName string `json:"first_name"`
 		LastName  string `json:"last_name"`
 		Hometown  string `json:"hometown"`
+	}
+
+	ListFriendsResponse struct {
+		Friends []Friendship `json:"friends"`
 	}
 
 	ListFriendRequestResponse struct {
@@ -79,10 +85,44 @@ type (
 	}
 )
 
+func (f Friendship) MarshalJSON() ([]byte, error) {
+	type alias Friendship
+
+	data := struct {
+		alias
+		DateConnected string `json:"date_connected"`
+	}{
+		alias: alias(f),
+	}
+	if !f.DateConnected.IsZero() {
+		data.DateConnected = f.DateConnected.Format("January 02, 2006")
+	}
+
+	return json.Marshal(data)
+}
+
 func (s *Service) SearchFriends(ctx context.Context, req SearchFriendsRequest) (*SearchFriendsResponse, error) {
 	res, err := s.storage.SearchUsers(ctx, req)
 	if err != nil {
 		return nil, gterr.New(gterr.Internal, "", err)
+	}
+
+	return res, nil
+}
+
+func (s *Service) ListFriend(ctx context.Context, email string) (*ListFriendsResponse, error) {
+	friendships, err := s.storage.ListFriends(ctx, email)
+	if err != nil {
+		return nil, gterr.New(gterr.Internal, "", err)
+	}
+
+	res := new(ListFriendsResponse)
+	for _, f := range friendships {
+		res.Friends = append(res.Friends, Friendship{
+			FriendEmail:   f.FriendEmail,
+			Relationship:  f.Relationship,
+			DateConnected: f.DateConnected,
+		})
 	}
 
 	return res, nil

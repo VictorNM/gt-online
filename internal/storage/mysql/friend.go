@@ -16,6 +16,30 @@ type friendship struct {
 	DateConnected sql.NullTime   `db:"date_connected"`
 }
 
+func (s *Storage) ListFriends(ctx context.Context, email string) ([]*friend.Friendship, error) {
+	stmt := `
+SELECT email, friend_email, relationship, date_connected
+FROM friendships
+WHERE email=? AND date_connected IS NOT NULL;
+`
+	var rows []friendship
+	err := s.db.SelectContext(ctx, &rows, stmt, email)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*friend.Friendship, 0, len(rows))
+	for _, r := range rows {
+		res = append(res, &friend.Friendship{
+			Email:         r.Email,
+			FriendEmail:   r.FriendEmail,
+			Relationship:  r.Relationship.String,
+			DateConnected: r.DateConnected.Time,
+		})
+	}
+	return res, nil
+}
+
 func (s *Storage) ListPendingFriendships(ctx context.Context, email string) ([]*friend.Friendship, error) {
 	stmt := `
 SELECT email, friend_email, relationship

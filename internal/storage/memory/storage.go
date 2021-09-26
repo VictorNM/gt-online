@@ -21,6 +21,22 @@ type (
 	User profile.Profile
 )
 
+func (s *Storage) ListFriends(_ context.Context, email string) ([]*friend.Friendship, error) {
+	s.friendshipsMu.Lock()
+	defer s.friendshipsMu.Unlock()
+
+	var res []*friend.Friendship
+
+	for _, f := range s.friendships {
+		if f.Email == email && !f.DateConnected.IsZero() {
+			out := f
+			res = append(res, &out)
+		}
+	}
+
+	return res, nil
+}
+
 func (s *Storage) ListPendingFriendships(_ context.Context, email string) ([]*friend.Friendship, error) {
 	s.friendshipsMu.Lock()
 	defer s.friendshipsMu.Unlock()
