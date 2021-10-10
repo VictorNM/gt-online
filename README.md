@@ -396,4 +396,22 @@ All APIs will follow the below rules:
      ]
    }
    ```
-  
+
+### Delete Friend Request
+
+#### Request
+
+- Method: DELETE
+- Path: /friends/:friend_email
+  ```
+  friend_email:      string,required
+  ```
+- Authenticate: yes
+- Query
+  ```
+  action:  string, enum: "cancel", "reject"
+  ```
+
+#### Response
+
+- 200: Success

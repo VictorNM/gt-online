@@ -263,7 +263,37 @@ func (api *API) createFriendRequest() gin.HandlerFunc {
 }
 
 func (api *API) deleteFriendRequest() gin.HandlerFunc {
-	return api.unimplemented()
+	return func(c *gin.Context) {
+		u, ok := api.userFromContext(c)
+		if !ok {
+			api.replyErr(c, gterr.New(gterr.Internal, "", fmt.Errorf("context not contain user")))
+			return
+		}
+		req := friend.DeleteFriendRequest{
+			Email:       u.Email,
+			FriendEmail: c.Param("friend_email"),
+		}
+		if req.FriendEmail == "" {
+			api.replyErr(c, gterr.New(gterr.InvalidArgument, "empty friend_email"))
+			return
+		}
+
+		action := c.Query("action")
+		var err error
+		switch action {
+		case "", "cancel":
+			err = api.Friend.CancelFriendRequest(c.Request.Context(), req)
+		case "reject":
+			err = api.Friend.RejectFriendRequest(c.Request.Context(), req)
+		default:
+			err = gterr.New(gterr.InvalidArgument, fmt.Sprintf("invalid action: %s", action))
+		}
+		if err != nil {
+			api.replyErr(c, err)
+			return
+		}
+		api.reply(c, 200, nil)
+	}
 }
 
 func (api *API) unimplemented() gin.HandlerFunc {

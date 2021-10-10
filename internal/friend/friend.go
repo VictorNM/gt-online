@@ -24,6 +24,7 @@ type (
 		GetFriendship(ctx context.Context, email, friendEmail string) (*Friendship, error)
 		InsertFriendship(ctx context.Context, f *Friendship) error
 		UpdateFriendship(ctx context.Context, f *Friendship) error
+		DeleteFriendRequest(ctx context.Context, email, friendEmail string) error
 	}
 )
 
@@ -82,6 +83,11 @@ type (
 	AcceptFriendRequest struct {
 		Email        string
 		EmailRequest string
+	}
+
+	DeleteFriendRequest struct {
+		Email       string
+		FriendEmail string
 	}
 )
 
@@ -217,5 +223,19 @@ func (s *Service) AcceptFriendRequest(ctx context.Context, req AcceptFriendReque
 		return gterr.New(gterr.Internal, "", err)
 	}
 
+	return nil
+}
+
+func (s *Service) CancelFriendRequest(ctx context.Context, req DeleteFriendRequest) error {
+	if err := s.storage.DeleteFriendRequest(ctx, req.Email, req.FriendEmail); err != nil {
+		return gterr.New(gterr.Internal, "failed to delete friend request", err)
+	}
+	return nil
+}
+
+func (s *Service) RejectFriendRequest(ctx context.Context, req DeleteFriendRequest) error {
+	if err := s.storage.DeleteFriendRequest(ctx, req.FriendEmail, req.Email); err != nil {
+		return gterr.New(gterr.Internal, "failed to delete friend request", err)
+	}
 	return nil
 }

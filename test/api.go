@@ -140,6 +140,10 @@ type (
 		Relationship  string `json:"relationship"`
 		DateConnected string `json:"date_connected"`
 	}
+
+	DeleteFriendRequest struct {
+		FriendEmail string
+	}
 )
 
 func (api *API) Register(t *testing.T, req RegisterRequest) (*RegisterResponse, error) {
@@ -222,6 +226,16 @@ func (api *API) ListFriends(t *testing.T) (*ListFriendsResponse, error) {
 		return nil, err
 	}
 	return res, nil
+}
+
+func (api *API) CancelFriendRequest(t *testing.T, req DeleteFriendRequest) error {
+	path := fmt.Sprintf("/friends/requests/%s", req.FriendEmail)
+	return api.send(t, http.MethodDelete, path, req, nil)
+}
+
+func (api *API) RejectFriendRequest(t *testing.T, req DeleteFriendRequest) error {
+	path := fmt.Sprintf("/friends/requests/%s?action=reject", req.FriendEmail)
+	return api.send(t, http.MethodDelete, path, req, nil)
 }
 
 func (api *API) get(t *testing.T, path string, req interface{}, res interface{}) error {

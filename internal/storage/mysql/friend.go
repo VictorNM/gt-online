@@ -143,3 +143,12 @@ WHERE email=:email AND friend_email=:friend_email;
 	}
 	return nil
 }
+
+func (s *Storage) DeleteFriendRequest(ctx context.Context, email, friendEmail string) error {
+	stmt := `
+DELETE FROM friendships 
+WHERE date_connected IS NULL
+AND email=? AND friend_email=?;`
+	_, err := s.db.ExecContext(ctx, stmt, email, friendEmail)
+	return err
+}
